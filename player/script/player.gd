@@ -1,6 +1,6 @@
 class_name Player extends CharacterBody2D
 
-var movespeed : float = 50.0
+var movespeed : float = 120.0
 var porj_path=preload("res://projectile.tscn")
 
 func Enter()-> void :
