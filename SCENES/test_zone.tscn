@@ -31,6 +31,7 @@ texture = ExtResource("1_i6ily")
 
 [node name="Camera2D" type="Camera2D" parent="CharacterBody2D"]
 position_smoothing_enabled = true
+position_smoothing_speed = 10.0
 
 [node name="Node2D" type="Node2D" parent="CharacterBody2D"]
 position = Vector2(8, 0)
