@@ -1,0 +1,64 @@
+[gd_scene load_steps=7 format=3 uid="uid://ceumx7h3goslh"]
+
+[ext_resource type="Script" uid="uid://rsli5i31jsnw" path="res://player/script/player.gd" id="1_ebx5c"]
+[ext_resource type="Texture2D" uid="uid://31cbf0657vx8" path="res://SPRITES/CavemanAxe.png" id="1_x6tcr"]
+
+[sub_resource type="CapsuleShape2D" id="CapsuleShape2D_x6tcr"]
+radius = 16.0
+height = 78.0
+
+[sub_resource type="Animation" id="Animation_d1dig"]
+length = 0.001
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("Sprite2D:frame")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 1,
+"values": [0]
+}
+
+[sub_resource type="Animation" id="Animation_ebx5c"]
+resource_name = "Axe"
+length = 0.5
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("Sprite2D:frame")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0, 0.0666667, 0.133333, 0.2),
+"transitions": PackedFloat32Array(1, 1, 1, 1),
+"update": 1,
+"values": [0, 2, 1, 0]
+}
+
+[sub_resource type="AnimationLibrary" id="AnimationLibrary_m4sf7"]
+_data = {
+&"Axe": SubResource("Animation_ebx5c"),
+&"RESET": SubResource("Animation_d1dig")
+}
+
+[node name="Player2" type="CharacterBody2D"]
+script = ExtResource("1_ebx5c")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("CapsuleShape2D_x6tcr")
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+scale = Vector2(3, 3)
+texture = ExtResource("1_x6tcr")
+vframes = 3
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="."]
+libraries = {
+&"": SubResource("AnimationLibrary_m4sf7")
+}
+
+[node name="Camera2D" type="Camera2D" parent="."]
+position_smoothing_enabled = true
