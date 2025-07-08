@@ -1,10 +1,10 @@
 class_name Player extends CharacterBody2D
 
-var movespeed : float = 50.0
+var movespeed : float = 100.0
 
 
 
-func _process(delta: float) -> void:
+func _process(_delta: float) -> void:
 	var direction = Input.get_vector("left","right","up","down")
 	print(direction)
 	velocity = direction * movespeed

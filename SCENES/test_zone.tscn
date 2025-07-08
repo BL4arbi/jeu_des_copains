@@ -24,6 +24,7 @@ texture = ExtResource("1_i6ily")
 
 [node name="Camera2D" type="Camera2D" parent="CharacterBody2D"]
 position_smoothing_enabled = true
+position_smoothing_speed = 10.0
 
 [node name="Grass01" parent="." instance=ExtResource("3_0bn5o")]
 position = Vector2(3, 0)
