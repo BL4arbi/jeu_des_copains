@@ -5,16 +5,16 @@ var rota: float
 var dir: float
 var speed = 500
 
+var damage = 25 
+
 func _ready() -> void:
 	global_position = pos
 	global_rotation = rota
-	
-	# Connecter le signal de l'Area2D enfant
+	add_to_group("bullet")
 	$Area2D.body_entered.connect(_on_body_entered)
 
 func _physics_process(delta: float) -> void:
-	# Déplacer la balle
-	global_position += Vector2(speed, 0).rotated(dir) * delta
+		global_position += Vector2(speed, 0).rotated(dir) * delta
 
 func _on_body_entered(body):
 	print("Collision détectée avec : ", body.name, " - Layer : ", body.collision_layer)
@@ -22,3 +22,9 @@ func _on_body_entered(body):
 		print("La balle a touché l'ennemi!")
 		$Sprite2D.visible = false
 		queue_free()
+	if body.has_method("take_damage"):
+			body.take_damage(damage)
+			queue_free()
+
+func get_damage():
+		return damage
