@@ -1,11 +1,13 @@
-[gd_scene load_steps=9 format=3 uid="uid://hrc85txecsn7"]
+[gd_scene load_steps=11 format=3 uid="uid://hrc85txecsn7"]
 
+[ext_resource type="Script" uid="uid://dxsp78gubkkp5" path="res://SCENES/test_zone.gd" id="1_7o5qm"]
 [ext_resource type="Texture2D" uid="uid://cenn01tut6qih" path="res://SPRITES/fantome festif.png" id="1_i6ily"]
 [ext_resource type="Script" uid="uid://rsli5i31jsnw" path="res://player/script/player.gd" id="1_yrv7h"]
 [ext_resource type="PackedScene" uid="uid://3oiog0qb7664" path="res://tiles map/grass01.tscn" id="3_0bn5o"]
-[ext_resource type="Script" uid="uid://ccqd1hadc8s2p" path="res://SCENES/character_body_2d_2.gd" id="4_5flns"]
+[ext_resource type="Script" uid="uid://ccqd1hadc8s2p" path="res://SCENES/enemy/character_body_2d_2.gd" id="4_5flns"]
 [ext_resource type="Texture2D" uid="uid://cwlutskak42ih" path="res://SPRITES/VAISSEAU 1.png" id="4_7oxek"]
 [ext_resource type="PackedScene" uid="uid://b7m3e5d8j0jeo" path="res://projectile.tscn" id="5_5flns"]
+[ext_resource type="PackedScene" uid="uid://dj851bfpwasyr" path="res://SCENES/enemy/enemy.tscn" id="10_7822y"]
 
 [sub_resource type="CapsuleShape2D" id="CapsuleShape2D_b2y35"]
 radius = 8.0
@@ -16,10 +18,11 @@ radius = 16.0
 height = 36.0
 
 [node name="test_zone" type="Node2D"]
+script = ExtResource("1_7o5qm")
 
 [node name="CharacterBody2D" type="CharacterBody2D" parent="." groups=["allies"]]
 position = Vector2(-16, 0)
-collision_mask = 16
+collision_mask = 18
 motion_mode = 1
 script = ExtResource("1_yrv7h")
 
@@ -58,5 +61,10 @@ shape = SubResource("CapsuleShape2D_7o5qm")
 [node name="Node2D" parent="." groups=["bullet"] instance=ExtResource("5_5flns")]
 collision_layer = 4
 collision_mask = 2
+
+[node name="Enemy" parent="." instance=ExtResource("10_7822y")]
+position = Vector2(-169, -14)
+collision_layer = 2
+collision_mask = 17
 
 [connection signal="input_event" from="Node2D" to="CharacterBody2D2" method="_on_node_2d_input_event"]
