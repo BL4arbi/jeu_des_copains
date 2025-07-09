@@ -5,7 +5,7 @@
 [ext_resource type="PackedScene" uid="uid://3oiog0qb7664" path="res://tiles map/grass01.tscn" id="3_0bn5o"]
 [ext_resource type="Script" uid="uid://ccqd1hadc8s2p" path="res://SCENES/character_body_2d_2.gd" id="4_5flns"]
 [ext_resource type="Texture2D" uid="uid://cwlutskak42ih" path="res://SPRITES/VAISSEAU 1.png" id="4_7oxek"]
-[ext_resource type="PackedScene" path="res://projectile.tscn" id="5_5flns"]
+[ext_resource type="PackedScene" uid="uid://b7m3e5d8j0jeo" path="res://projectile.tscn" id="5_5flns"]
 
 [sub_resource type="CapsuleShape2D" id="CapsuleShape2D_b2y35"]
 radius = 8.0
