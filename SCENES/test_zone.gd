@@ -1,7 +1,7 @@
 extends Node2D
 
 @export var enemy_scene: PackedScene = preload("res://SCENES/enemy/enemy.tscn")
-@export var spawn_interval = 2.0  # Secondes entre chaque spawn
+@export var spawn_interval = 1 # Secondes entre chaque spawn
 var spawn_timer: Timer
 
 func _ready():
@@ -23,4 +23,22 @@ func _on_spawn_timer_timeout():
 func spawn_enemy_at(position: Vector2):
 	var enemy = enemy_scene.instantiate()
 	enemy.global_position = position
+	
+	# FORCER les couches de collision pour l'ennemi
+	enemy.collision_layer = 2
+	enemy.collision_mask = 1
+	
+	# Assigner le joueur
+	var player = get_node("CharacterBody2D")
+	enemy.player = player
+	
 	add_child(enemy)
+	
+	# Attendre que l'ennemi soit ajouté, puis configurer l'Area2D
+	await get_tree().process_frame
+	
+	# FORCER les couches pour l'Area2D
+	if enemy.has_node("Area2D"):
+		enemy.get_node("Area2D").collision_layer = 2
+		enemy.get_node("Area2D").collision_mask = 3  # Pour détecter les balles (layer 3)
+		print("Area2D configuré pour ", enemy.name)

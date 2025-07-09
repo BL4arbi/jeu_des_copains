@@ -1,12 +1,12 @@
-[gd_scene load_steps=11 format=3 uid="uid://hrc85txecsn7"]
+[gd_scene load_steps=14 format=3 uid="uid://hrc85txecsn7"]
 
 [ext_resource type="Script" uid="uid://dxsp78gubkkp5" path="res://SCENES/test_zone.gd" id="1_7o5qm"]
 [ext_resource type="Texture2D" uid="uid://cenn01tut6qih" path="res://SPRITES/fantome festif.png" id="1_i6ily"]
 [ext_resource type="Script" uid="uid://rsli5i31jsnw" path="res://player/script/player.gd" id="1_yrv7h"]
 [ext_resource type="PackedScene" uid="uid://3oiog0qb7664" path="res://tiles map/grass01.tscn" id="3_0bn5o"]
 [ext_resource type="Script" uid="uid://ccqd1hadc8s2p" path="res://SCENES/enemy/character_body_2d_2.gd" id="4_5flns"]
-[ext_resource type="Texture2D" uid="uid://cwlutskak42ih" path="res://SPRITES/VAISSEAU 1.png" id="4_7oxek"]
 [ext_resource type="PackedScene" uid="uid://b7m3e5d8j0jeo" path="res://projectile.tscn" id="5_5flns"]
+[ext_resource type="Texture2D" uid="uid://bjior41lx3qa7" path="res://SPRITES/vieux_papy_4.png" id="6_c680g"]
 [ext_resource type="PackedScene" uid="uid://dj851bfpwasyr" path="res://SCENES/enemy/enemy.tscn" id="10_7822y"]
 
 [sub_resource type="CapsuleShape2D" id="CapsuleShape2D_b2y35"]
@@ -15,7 +15,44 @@ height = 24.0
 
 [sub_resource type="CapsuleShape2D" id="CapsuleShape2D_7o5qm"]
 radius = 16.0
-height = 36.0
+height = 60.0
+
+[sub_resource type="Animation" id="Animation_ymsw5"]
+resource_name = "fou"
+loop_mode = 1
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("Sprite2D:frame")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(-0.0333333, 0.1, 0.233333, 0.333333, 0.466667, 0.6, 0.733333),
+"transitions": PackedFloat32Array(1, 1, 1, 1, 1, 1, 1),
+"update": 1,
+"values": [0, 1, 2, 3, 2, 1, 0]
+}
+
+[sub_resource type="Animation" id="Animation_7822y"]
+length = 0.001
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("Sprite2D:frame")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 1,
+"values": [0]
+}
+
+[sub_resource type="AnimationLibrary" id="AnimationLibrary_3px0b"]
+_data = {
+&"RESET": SubResource("Animation_7822y"),
+&"fou": SubResource("Animation_ymsw5")
+}
 
 [node name="test_zone" type="Node2D"]
 script = ExtResource("1_7o5qm")
@@ -34,6 +71,7 @@ texture_filter = 1
 texture = ExtResource("1_i6ily")
 
 [node name="Camera2D" type="Camera2D" parent="CharacterBody2D"]
+zoom = Vector2(3, 3)
 position_smoothing_enabled = true
 position_smoothing_speed = 10.0
 
@@ -53,10 +91,19 @@ script = ExtResource("4_5flns")
 player = NodePath("../CharacterBody2D")
 
 [node name="Sprite2D" type="Sprite2D" parent="CharacterBody2D2"]
-texture = ExtResource("4_7oxek")
+position = Vector2(11, 0)
+texture = ExtResource("6_c680g")
+hframes = 4
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="CharacterBody2D2" groups=["bullet"]]
+position = Vector2(0, 6)
 shape = SubResource("CapsuleShape2D_7o5qm")
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="CharacterBody2D2"]
+libraries = {
+&"": SubResource("AnimationLibrary_3px0b")
+}
+autoplay = "fou"
 
 [node name="Node2D" parent="." groups=["bullet"] instance=ExtResource("5_5flns")]
 collision_layer = 4
@@ -66,5 +113,7 @@ collision_mask = 2
 position = Vector2(-169, -14)
 collision_layer = 2
 collision_mask = 17
+
+[node name="poison_bolt" type="CharacterBody2D" parent="."]
 
 [connection signal="input_event" from="Node2D" to="CharacterBody2D2" method="_on_node_2d_input_event"]
