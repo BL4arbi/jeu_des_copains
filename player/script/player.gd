@@ -11,6 +11,7 @@ enum ProjectileType {
 }
 
 var current_projectile_type: ProjectileType = ProjectileType.FIRE
+var projectile_type: ProjectileType = ProjectileType.FIRE
 
 func _ready() -> void:
 	add_to_group("allies")
