@@ -35,7 +35,7 @@ func _ready():
 	
 	find_player()
 	print("Ennemi créé avec ", max_health, " HP")
-
+	#pushparpitié
 func create_smart_health_bar():
 	# Barre de vie VERTICALE petite
 	health_bar = ProgressBar.new()
