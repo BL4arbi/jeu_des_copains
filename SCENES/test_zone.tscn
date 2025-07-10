@@ -1,4 +1,4 @@
-[gd_scene load_steps=14 format=3 uid="uid://hrc85txecsn7"]
+[gd_scene load_steps=16 format=3 uid="uid://hrc85txecsn7"]
 
 [ext_resource type="Script" uid="uid://dxsp78gubkkp5" path="res://SCENES/test_zone.gd" id="1_7o5qm"]
 [ext_resource type="Texture2D" uid="uid://cenn01tut6qih" path="res://SPRITES/fantome festif.png" id="1_i6ily"]
@@ -7,6 +7,8 @@
 [ext_resource type="Script" uid="uid://ccqd1hadc8s2p" path="res://SCENES/enemy/character_body_2d_2.gd" id="4_5flns"]
 [ext_resource type="PackedScene" uid="uid://b7m3e5d8j0jeo" path="res://projectile.tscn" id="5_5flns"]
 [ext_resource type="Texture2D" uid="uid://bjior41lx3qa7" path="res://SPRITES/vieux_papy_4.png" id="6_c680g"]
+[ext_resource type="Script" uid="uid://b1so2qjxl4kw7" path="res://SCENES/spanswer.gd" id="9_ymsw5"]
+[ext_resource type="PackedScene" uid="uid://clip2j277jyr2" path="res://inventaire.tscn" id="10_3px0b"]
 [ext_resource type="PackedScene" uid="uid://dj851bfpwasyr" path="res://SCENES/enemy/enemy.tscn" id="10_7822y"]
 
 [sub_resource type="CapsuleShape2D" id="CapsuleShape2D_b2y35"]
@@ -115,5 +117,12 @@ collision_layer = 2
 collision_mask = 17
 
 [node name="poison_bolt" type="CharacterBody2D" parent="."]
+
+[node name="WeaponSpawner" type="Node2D" parent="."]
+script = ExtResource("9_ymsw5")
+
+[node name="UI" type="CanvasLayer" parent="."]
+
+[node name="inventory_ui" parent="UI" instance=ExtResource("10_3px0b")]
 
 [connection signal="input_event" from="Node2D" to="CharacterBody2D2" method="_on_node_2d_input_event"]

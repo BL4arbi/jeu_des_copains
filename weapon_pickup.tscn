@@ -1,0 +1,16 @@
+[gd_scene load_steps=4 format=3 uid="uid://dp1kbaohgxlka"]
+
+[ext_resource type="Script" uid="uid://26fnwau0ecog" path="res://SCENES/weapon_pickup.gd" id="1_61tva"]
+[ext_resource type="Texture2D" uid="uid://w0ueh1fkei2u" path="res://SPRITES/GRENADE_TOP_DOWN.png" id="2_wxgof"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_wxgof"]
+
+[node name="WeaponPickup" type="Area2D"]
+collision_layer = 8
+script = ExtResource("1_61tva")
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+texture = ExtResource("2_wxgof")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("CircleShape2D_wxgof")

@@ -84,3 +84,25 @@ func spawn_enemy_at(position: Vector2):
 		enemy.get_node("Area2D").collision_layer = 2
 		enemy.get_node("Area2D").collision_mask = 3  # Pour détecter les balles (layer 3)
 		print("Area2D configuré pour ", enemy.name)
+# AJOUTE ça dans ton script de scène principale (test_zone.gd)
+
+func _input(event):
+	# Appuie sur la touche C pour nettoyer tous les sprites orphelins
+	if Input.is_action_just_pressed("clear"):  # Touche Escape
+		clean_orphan_sprites()
+
+func clean_orphan_sprites():
+	var count = 0
+	# Chercher tous les Sprite2D orphelins dans la scène
+	for node in get_tree().get_nodes_in_group("orphan_sprites"):
+		node.queue_free()
+		count += 1
+	
+	# Chercher tous les Line2D orphelins
+	var all_nodes = get_tree().current_scene.find_children("*", "Line2D")
+	for line in all_nodes:
+		if line.get_parent() != get_tree().current_scene:
+			line.queue_free()
+			count += 1
+	
+	print("🧹 Nettoyé ", count, " sprites orphelins")
