@@ -7,8 +7,8 @@
 [ext_resource type="Script" uid="uid://ccqd1hadc8s2p" path="res://SCENES/enemy/character_body_2d_2.gd" id="4_5flns"]
 [ext_resource type="PackedScene" uid="uid://b7m3e5d8j0jeo" path="res://projectile.tscn" id="5_5flns"]
 [ext_resource type="Texture2D" uid="uid://bjior41lx3qa7" path="res://SPRITES/vieux_papy_4.png" id="6_c680g"]
-[ext_resource type="Script" uid="uid://b1so2qjxl4kw7" path="res://SCENES/spanswer.gd" id="9_ymsw5"]
-[ext_resource type="PackedScene" uid="uid://clip2j277jyr2" path="res://inventaire.tscn" id="10_3px0b"]
+[ext_resource type="Script" path="res://SCENES/spanswer.gd" id="9_ymsw5"]
+[ext_resource type="PackedScene" path="res://inventaire.tscn" id="10_3px0b"]
 [ext_resource type="PackedScene" uid="uid://dj851bfpwasyr" path="res://SCENES/enemy/enemy.tscn" id="10_7822y"]
 
 [sub_resource type="CapsuleShape2D" id="CapsuleShape2D_b2y35"]
