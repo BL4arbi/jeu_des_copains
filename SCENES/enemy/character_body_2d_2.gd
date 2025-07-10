@@ -1,11 +1,11 @@
 extends CharacterBody2D
 
 @export var speed: float = 80.0
-@export var chase_range: float = 500.0
+@export var chase_range: float = 1500
 @export var player: CharacterBody2D
 
 
-@export var max_health = 100
+@export var max_health = 300
 var current_health
 
 func _ready():

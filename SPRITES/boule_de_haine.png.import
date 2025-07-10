@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bpqxy7qx04l5x"
-path="res://.godot/imported/FIRE_BALL.png-1de2bbe211f63db8de5cb607e69f56c7.ctex"
+uid="uid://cv1npigxuwrvm"
+path="res://.godot/imported/boule_de_haine.png-1652039ed6443b18ae17c3ea5919947a.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://SPRITES/FIRE_BALL.png"
-dest_files=["res://.godot/imported/FIRE_BALL.png-1de2bbe211f63db8de5cb607e69f56c7.ctex"]
+source_file="res://SPRITES/boule_de_haine.png"
+dest_files=["res://.godot/imported/boule_de_haine.png-1652039ed6443b18ae17c3ea5919947a.ctex"]
 
 [params]
 
