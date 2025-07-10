@@ -34,6 +34,7 @@ texture_filter = 1
 texture = ExtResource("1_i6ily")
 
 [node name="Camera2D" type="Camera2D" parent="CharacterBody2D"]
+zoom = Vector2(2, 2)
 position_smoothing_enabled = true
 position_smoothing_speed = 10.0
 

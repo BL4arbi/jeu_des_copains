@@ -3,6 +3,17 @@ class_name Player extends CharacterBody2D
 var movespeed : float = 120.0
 var porj_path=preload("res://projectile.tscn")
 
+enum ProjectileType {
+	FIRE,
+	POISON,
+	LIGHTNING
+}
+
+var current_projectile_type: ProjectileType = ProjectileType.FIRE
+
+func _ready() -> void:
+	add_to_group("allies")
+
 func Enter()-> void :
 	
 	pass
@@ -21,6 +32,9 @@ func fire():
 	bullet.dir = rotation
 	bullet.pos = $Node2D.global_position
 	bullet.rota=global_rotation
+	bullet.projectile_type = current_projectile_type
 	get_parent().add_child(bullet)
 	
-	
+func change_projectile_type(new_type: ProjectileType):
+	current_projectile_type = new_type
+	print("Type de projectile changé vers : ", ProjectileType.keys()[new_type])	
