@@ -24,8 +24,8 @@ var dodge_direction: Vector2 = Vector2.ZERO
 # Composants
 @onready var sprite: Sprite2D = $Sprite2D
 @onready var collision: CollisionShape2D = $CollisionShape2D
-@onready var area_detector: Area2D = $AreaDetector
-@onready var area_collision: CollisionShape2D = $AreaDetector/CollisionShape2D
+@onready var area_detector: Area2D = $Area2D
+@onready var area_collision: CollisionShape2D = $CollisionShape2D
 @onready var animation_player: AnimationPlayer = get_node_or_null("AnimationPlayer")
 @onready var health_bar: ProgressBar = get_node_or_null("HealthBar")
 
@@ -139,7 +139,7 @@ func shoot_at_player():
 	
 	# Dégâts selon le type
 	var projectile_damage = damage * 0.8 if enemy_type == "Shooter" else damage * 0.6
-	projectile.setup(projectile_damage, 250.0, 4.0,"enemy")
+	projectile.setup(projectile_damage, 250.0, 4.0)
 	
 	var direction = (target.global_position - global_position).normalized()
 	var spawn_pos = global_position + direction * 30
