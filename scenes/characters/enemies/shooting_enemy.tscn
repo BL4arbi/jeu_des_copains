@@ -1,6 +1,6 @@
 [gd_scene load_steps=8 format=3 uid="uid://dgrgaoyc45m6w"]
 
-[ext_resource type="Script" uid="uid://c2cymgyhgge18" path="res://scripts/enemies/BaseEnemy.gd" id="1_2ampc"]
+[ext_resource type="Script" uid="uid://c2cymgyhgge18" path="res://SCRIPTS/enemies/BaseEnemy.gd" id="1_2ampc"]
 [ext_resource type="Texture2D" uid="uid://cv1npigxuwrvm" path="res://assets/SPRITES/enemies/boule_de_haine.png" id="1_4xw7u"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_2ampc"]
@@ -8,6 +8,21 @@ radius = 21.587
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_6veht"]
 radius = 18.2483
+
+[sub_resource type="Animation" id="Animation_jyrcw"]
+length = 0.001
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("Sprite2D:frame")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 1,
+"values": [0]
+}
 
 [sub_resource type="Animation" id="Animation_crjvf"]
 resource_name = "new_animation"
@@ -23,21 +38,6 @@ tracks/0/keys = {
 "transitions": PackedFloat32Array(1, 1, 1, 1, 1),
 "update": 1,
 "values": [0, 3, 2, 1, 4]
-}
-
-[sub_resource type="Animation" id="Animation_jyrcw"]
-length = 0.001
-tracks/0/type = "value"
-tracks/0/imported = false
-tracks/0/enabled = true
-tracks/0/path = NodePath("Sprite2D:frame")
-tracks/0/interp = 1
-tracks/0/loop_wrap = true
-tracks/0/keys = {
-"times": PackedFloat32Array(0),
-"transitions": PackedFloat32Array(1),
-"update": 1,
-"values": [0]
 }
 
 [sub_resource type="AnimationLibrary" id="AnimationLibrary_vk1ry"]
