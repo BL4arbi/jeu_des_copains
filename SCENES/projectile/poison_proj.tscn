@@ -1,7 +1,7 @@
 [gd_scene load_steps=5 format=3 uid="uid://c36fvqxbtewwj"]
 
 [ext_resource type="Script" uid="uid://c2ldifwfuwm1i" path="res://SCENES/projectile/poison_proj.gd" id="1_cxbrm"]
-[ext_resource type="Texture2D" uid="uid://c5wh5ow0a57t1" path="res://SPRITES/BULLET_TOP_DOWN.png" id="2_ck5pa"]
+[ext_resource type="Texture2D" uid="uid://bv7m035ul3p5j" path="res://SPRITES/ToxicOrb.png" id="2_34upv"]
 
 [sub_resource type="CapsuleShape2D" id="CapsuleShape2D_vljqi"]
 radius = 8.0
@@ -14,8 +14,8 @@ radius = 8.0
 script = ExtResource("1_cxbrm")
 
 [node name="Sprite2D" type="Sprite2D" parent="."]
-rotation = 1.57905
-texture = ExtResource("2_ck5pa")
+texture = ExtResource("2_34upv")
+hframes = 4
 
 [node name="Area2D" type="Area2D" parent="."]
 

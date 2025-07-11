@@ -3,7 +3,7 @@ extends Node2D
 var pos: Vector2
 var rota: float
 var dir: float
-@export var speed = 500
+@export var speed = 200
 @export var damage = 15
 @export var poison_damage = 8
 @export var poison_duration = 4.0
