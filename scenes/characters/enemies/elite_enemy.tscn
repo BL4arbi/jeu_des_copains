@@ -48,7 +48,6 @@ _data = {
 }
 
 [node name="Elite_Enemy" type="CharacterBody2D"]
-collision_layer = 2
 collision_mask = 21
 script = ExtResource("1_h6et2")
 

@@ -79,7 +79,7 @@ func fire_projectile():
 	
 	get_tree().current_scene.add_child(projectile)
 	
-	projectile.setup(weapon.damage, weapon.speed, weapon.lifetime, "player")
+	projectile.setup(weapon.damage, weapon.speed, weapon.lifetime)
 	var spawn_offset = (mouse_pos - global_position).normalized() * 30
 	projectile.launch(global_position + spawn_offset, mouse_pos)
 func handle_weapon_switch():
