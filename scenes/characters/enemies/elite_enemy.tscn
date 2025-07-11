@@ -1,0 +1,72 @@
+[gd_scene load_steps=8 format=3 uid="uid://dlviv7xfor6uq"]
+
+[ext_resource type="Script" uid="uid://c2cymgyhgge18" path="res://scripts/enemies/BaseEnemy.gd" id="1_h6et2"]
+[ext_resource type="Texture2D" uid="uid://bjior41lx3qa7" path="res://assets/SPRITES/enemies/vieux_papy_4.png" id="1_ycr4e"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_h6et2"]
+size = Vector2(66, 21)
+
+[sub_resource type="CapsuleShape2D" id="CapsuleShape2D_rt50t"]
+radius = 18.0
+height = 46.0
+
+[sub_resource type="Animation" id="Animation_fh2xi"]
+resource_name = "new_animation"
+loop_mode = 1
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("Sprite2D:frame")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0.0666667, 0.2, 0.3, 0.433333, 0.566667, 0.7, 0.8),
+"transitions": PackedFloat32Array(1, 1, 1, 1, 1, 1, 1),
+"update": 1,
+"values": [0, 1, 2, 3, 2, 1, 0]
+}
+
+[sub_resource type="Animation" id="Animation_j2jmd"]
+length = 0.001
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("Sprite2D:frame")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 1,
+"values": [0]
+}
+
+[sub_resource type="AnimationLibrary" id="AnimationLibrary_7pnhr"]
+_data = {
+&"RESET": SubResource("Animation_j2jmd"),
+&"new_animation": SubResource("Animation_fh2xi")
+}
+
+[node name="Elite_Enemy" type="CharacterBody2D"]
+collision_layer = 2
+collision_mask = 21
+script = ExtResource("1_h6et2")
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+texture = ExtResource("1_ycr4e")
+hframes = 4
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+position = Vector2(4, 8)
+shape = SubResource("RectangleShape2D_h6et2")
+
+[node name="Area2D" type="Area2D" parent="."]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Area2D"]
+position = Vector2(-12, 4)
+shape = SubResource("CapsuleShape2D_rt50t")
+
+[node name="AnimationTree" type="AnimationTree" parent="."]
+libraries = {
+&"": SubResource("AnimationLibrary_7pnhr")
+}
