@@ -82,6 +82,7 @@ func fire_projectile():
 	projectile.setup(weapon.damage, weapon.speed, weapon.lifetime)
 	var spawn_offset = (mouse_pos - global_position).normalized() * 30
 	projectile.launch(global_position + spawn_offset, mouse_pos)
+
 func handle_weapon_switch():
 	# Flèche haut pour cycler
 	if Input.is_action_just_pressed("ui_up") and weapons.size() > 1:
