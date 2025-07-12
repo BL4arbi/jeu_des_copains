@@ -100,7 +100,7 @@ func update_hud():
 		var health_percent = (player.current_health / player.max_health) * 100
 		health_bar.value = health_percent
 
-func _input(event):
+func _input(_event):
 	# Test: K pour ajouter des kills
 	if Input.is_action_pressed("ui_accept") and Input.is_key_pressed(KEY_K):
 		GlobalData.add_kill()

@@ -30,7 +30,7 @@ func load_characters_data():
 			"health": 80,
 			"speed": 280,
 			"damage": 30,
-			"sprite_path": "res://assets/SPRITES/character/TOILET_TOP_DOWN.png",
+			"sprite_path": "res://assets/SPRITES/character/Hunter_Walk.png",
 			"description": "Rapide mais fragile"
 		},
 		{

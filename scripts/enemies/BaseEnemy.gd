@@ -60,7 +60,7 @@ func _physics_process(delta):
 			"Elite":
 				elite_behavior(delta, distance)
 
-func basic_behavior(delta, distance):
+func basic_behavior(_delta, _distance):
 	# Fonce droit vers le joueur pour attaque au corps à corps
 	var direction = (target.global_position - global_position).normalized()
 	velocity = direction * speed
