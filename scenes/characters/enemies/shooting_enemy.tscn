@@ -1,7 +1,8 @@
-[gd_scene load_steps=8 format=3 uid="uid://dgrgaoyc45m6w"]
+[gd_scene load_steps=9 format=3 uid="uid://dgrgaoyc45m6w"]
 
-[ext_resource type="Script" uid="uid://c2cymgyhgge18" path="res://SCRIPTS/enemies/BaseEnemy.gd" id="1_2ampc"]
+[ext_resource type="Script" uid="uid://c2cymgyhgge18" path="res://scripts/enemies/BaseEnemy.gd" id="1_2ampc"]
 [ext_resource type="Texture2D" uid="uid://cv1npigxuwrvm" path="res://assets/SPRITES/enemies/boule_de_haine.png" id="1_4xw7u"]
+[ext_resource type="Script" uid="uid://cowdw5bg5gcng" path="res://scenes/characters/enemies/health_bar.gd" id="3_6veht"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_2ampc"]
 radius = 21.587
@@ -47,7 +48,7 @@ _data = {
 }
 
 [node name="ShootingEnemy" type="CharacterBody2D"]
-collision_mask = 21
+collision_layer = 2
 script = ExtResource("1_2ampc")
 
 [node name="Sprite2D" type="Sprite2D" parent="."]
@@ -72,9 +73,11 @@ libraries = {
 autoplay = "new_animation"
 
 [node name="HealthBar" type="ProgressBar" parent="."]
-offset_left = -21.0
+custom_minimum_size = Vector2(4, 20)
+offset_left = -15.0
 offset_top = -21.0
-offset_right = -16.0
-offset_bottom = 19.0
-rotation = -1.55845
+offset_right = -11.0
+offset_bottom = 17.0
+rotation = -1.57179
 show_percentage = false
+script = ExtResource("3_6veht")

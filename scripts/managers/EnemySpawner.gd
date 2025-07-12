@@ -36,7 +36,7 @@ var enemy_types: Array = [
 	{
 		"name": "Elite",
 		"scene": elite_enemy_scene,
-		"weight": 10,
+		"weight": 50,
 		"health": 80.0,
 		"speed": 50.0,
 		"damage": 15.0,
