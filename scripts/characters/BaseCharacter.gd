@@ -19,6 +19,7 @@ func _ready():
 		current_health = max_health
 		speed = data.get("speed", 200)
 		damage = data.get("damage", 20)
+	
 
 func take_damage(amount: float):
 	current_health = max(0, current_health - amount)

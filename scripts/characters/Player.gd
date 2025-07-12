@@ -4,7 +4,9 @@ class_name Player
 
 var weapons: Array[ProjectileData] = []
 var current_weapon: int = 0
-var fire_timer: float = 0.0
+var fire_timer: float = 0.0 
+@onready var animation_player: AnimationPlayer = get_node_or_null("AnimationPlayer")
+
 
 func _ready():
 	super._ready()
@@ -30,12 +32,16 @@ func handle_movement():
 	
 	if Input.is_action_pressed("move_right"):
 		input_direction.x += 1
+		animation_player.play("walk")
 	if Input.is_action_pressed("move_left"):
 		input_direction.x -= 1
+		animation_player.play("walk")
 	if Input.is_action_pressed("move_down"):
 		input_direction.y += 1
+		animation_player.play("walk")
 	if Input.is_action_pressed("move_up"):
 		input_direction.y -= 1
+		animation_player.play("walk")
 	if Input.is_action_pressed("weapon_1"):
 		current_weapon=0
 	if Input.is_action_pressed("weapon_2"):

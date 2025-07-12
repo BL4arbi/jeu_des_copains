@@ -1,7 +1,7 @@
 [gd_scene load_steps=8 format=3 uid="uid://j24ose5c42uy"]
 
 [ext_resource type="Texture2D" uid="uid://31cbf0657vx8" path="res://assets/SPRITES/enemies/CavemanAxe.png" id="1_0sydy"]
-[ext_resource type="Script" uid="uid://c2cymgyhgge18" path="res://SCRIPTS/enemies/BaseEnemy.gd" id="1_1whgi"]
+[ext_resource type="Script" uid="uid://c2cymgyhgge18" path="res://scripts/enemies/BaseEnemy.gd" id="1_1whgi"]
 
 [sub_resource type="CapsuleShape2D" id="CapsuleShape2D_1whgi"]
 radius = 6.0
