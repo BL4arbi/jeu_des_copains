@@ -1,0 +1,33 @@
+[gd_scene load_steps=5 format=3 uid="uid://b7m3e5d8j0jeo"]
+
+[ext_resource type="Script" uid="uid://brcahd2j3e2sv" path="res://projectile.gd" id="1_qxf0c"]
+[ext_resource type="Texture2D" uid="uid://drxo2ohgx6m3x" path="res://SPRITES/FIRE_BALL.png" id="2_dgwo2"]
+[ext_resource type="Texture2D" uid="uid://8ouy7jvf5tun" path="res://SPRITES/ELECTRO_BALL.png" id="3_sxmqc"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_sxmqc"]
+size = Vector2(16, 10)
+
+[node name="Node2D" type="CharacterBody2D"]
+script = ExtResource("1_qxf0c")
+
+[node name="FIRE_SPRITE" type="Sprite2D" parent="."]
+texture = ExtResource("2_dgwo2")
+hframes = 3
+
+[node name="POISON_SPRITE" type="Sprite2D" parent="."]
+
+[node name="LIGHTNING_SPRITE" type="Sprite2D" parent="."]
+texture = ExtResource("3_sxmqc")
+hframes = 3
+
+[node name="Area2D" type="Area2D" parent="."]
+position = Vector2(-18, 0)
+collision_layer = 4
+collision_mask = 2
+monitorable = false
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Area2D"]
+position = Vector2(18, 0)
+shape = SubResource("RectangleShape2D_sxmqc")
+
+[connection signal="area_entered" from="Area2D" to="." method="_on_area_2d_area_entered"]

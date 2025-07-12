@@ -1,0 +1,83 @@
+[gd_scene load_steps=8 format=3 uid="uid://j24ose5c42uy"]
+
+[ext_resource type="Texture2D" uid="uid://31cbf0657vx8" path="res://assets/SPRITES/enemies/CavemanAxe.png" id="1_0sydy"]
+[ext_resource type="Script" uid="uid://c2cymgyhgge18" path="res://SCRIPTS/enemies/BaseEnemy.gd" id="1_1whgi"]
+
+[sub_resource type="CapsuleShape2D" id="CapsuleShape2D_1whgi"]
+radius = 6.0
+height = 24.0
+
+[sub_resource type="Animation" id="Animation_1whgi"]
+length = 0.001
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("Sprite2D:frame")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 1,
+"values": [0]
+}
+
+[sub_resource type="Animation" id="Animation_0sydy"]
+resource_name = "new_animation"
+length = 0.75
+loop_mode = 1
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("Sprite2D:frame")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(-0.0333333, 0.166667, 0.3, 0.4, 0.566667),
+"transitions": PackedFloat32Array(1, 1, 1, 1, 1),
+"update": 1,
+"values": [0, 1, 2, 1, 0]
+}
+
+[sub_resource type="AnimationLibrary" id="AnimationLibrary_g5wgt"]
+_data = {
+&"RESET": SubResource("Animation_1whgi"),
+&"new_animation": SubResource("Animation_0sydy")
+}
+
+[sub_resource type="CapsuleShape2D" id="CapsuleShape2D_g5wgt"]
+radius = 6.0
+height = 24.0
+
+[node name="BasicEnemy" type="CharacterBody2D"]
+collision_mask = 2
+script = ExtResource("1_1whgi")
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+texture = ExtResource("1_0sydy")
+vframes = 3
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+position = Vector2(-1, 2)
+shape = SubResource("CapsuleShape2D_1whgi")
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="."]
+libraries = {
+&"": SubResource("AnimationLibrary_g5wgt")
+}
+autoplay = "new_animation"
+
+[node name="Area2D" type="Area2D" parent="."]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Area2D"]
+position = Vector2(-1, 1)
+shape = SubResource("CapsuleShape2D_g5wgt")
+
+[node name="HealthBar" type="ProgressBar" parent="."]
+custom_minimum_size = Vector2(4, 20)
+offset_left = -11.0
+offset_top = -11.0
+offset_right = -7.0
+offset_bottom = 9.0
+rotation = -1.57179
+show_percentage = false
