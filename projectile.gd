@@ -17,8 +17,8 @@ func _physics_process(delta: float) -> void:
 	global_position += Vector2(speed, 0).rotated(dir) * delta
 
 func _on_body_entered(body):
-	print("Collision détectée avec : ", body.name, " - Layer : ", body.collision_layer)
-	if body.name == "CharacterBody2D2":
-		print("La balle a touché l'ennemi!")
+	print("Collision détectée avec : ", body.name, " | Layer : ", body.collision_layer)
+	if body.is_in_group("enemies"):  # Vérifie si le body est dans le groupe "enemies"
+		print("La balle a touché un ennemi !")
 		$Sprite2D.visible = false
 		queue_free()

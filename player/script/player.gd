@@ -6,12 +6,12 @@ var porj_path=preload("res://projectile.tscn")
 func Enter()-> void :
 	
 	pass
-func _process(delta: float) -> void:
+func _process(_delta: float) -> void:
 	var direction = Input.get_vector("left","right","up","down")
 	velocity = direction * movespeed
 	move_and_slide()
 
-func _physics_process(delta: float) -> void:
+func _physics_process(_delta: float) -> void:
 	look_at(get_global_mouse_position())
 	if Input.is_action_just_pressed("click"):
 		fire()	

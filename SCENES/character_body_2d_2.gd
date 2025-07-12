@@ -1,10 +1,10 @@
 extends CharacterBody2D
 
 @export var speed: float = 80.0
-@export var chase_range: float = 500.0
+@export var chase_range: float = 100.0
 @export var player: CharacterBody2D
 
-func _physics_process(delta):
+func _physics_process(_delta):
 	if player == null:
 		return
 
@@ -17,8 +17,11 @@ func _physics_process(delta):
 		velocity = Vector2.ZERO
 
 	move_and_slide()
-
-func _on_area_2d_body_entered(body):
-	if body.is_in_group("bullet"):
-		queue_free()        # Tue l’ennemi
-		body.queue_free()   # Tue le projectile aussi
+func _on_body_entered(body):
+	
+	if body.is_in_group("enemies"):
+		 
+		print("La balle a touché un ennemi !")
+		
+		body.queue_free()  # Supprime l'ennemi
+		queue_free()       # Supprime la balle aussi
