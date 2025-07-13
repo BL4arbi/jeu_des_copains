@@ -1,4 +1,4 @@
-# LightningProjectile.gd - Version avec animation corrigée
+# LightningProjectile.gd - Version utilisant la vraie scène Lightning_projectile
 extends Area2D
 class_name LightningProjectile
 
@@ -12,7 +12,7 @@ var warning_time: float = 1.0
 # Variables internes
 var target_enemies: Array = []
 var warning_circles: Array = []
-var lightning_animations: Array = []
+var lightning_scenes: Array = []  # Changé pour stocker les vraies scènes
 
 func _ready():
 	print("⚡ Lightning created!")
@@ -25,9 +25,9 @@ func _ready():
 		queue_free()
 		return
 	
-	# Créer les cercles d'avertissement ET les animations
+	# Créer les cercles d'avertissement ET charger les vraies scènes
 	create_warning_circles()
-	create_lightning_animations()
+	load_lightning_scenes()
 	
 	# Frapper après le délai
 	var timer = Timer.new()
@@ -104,79 +104,74 @@ func create_warning_circle(pos: Vector2) -> Sprite2D:
 	
 	return warning
 
-# Créer les animations de foudre sur les cercles
+# NOUVELLE FONCTION : Charger les vraies scènes Lightning_projectile
+func load_lightning_scenes():
+	# Charger la vraie scène de foudre
+	var lightning_scene_path = "res://scenes/projectiles/Lightning_projectile.tscn"
+	
+	if not ResourceLoader.exists(lightning_scene_path):
+		print("❌ Lightning scene not found at: ", lightning_scene_path)
+		# Fallback vers les animations par code
+		create_lightning_animations()
+		return
+	
+	print("✅ Loading real Lightning scenes...")
+	
+	for target_data in target_enemies:
+		var lightning_scene = load(lightning_scene_path)
+		var lightning_instance = lightning_scene.instantiate()
+		
+		# Positionner la scène au bon endroit
+		lightning_instance.global_position = target_data.position
+		
+		# Désactiver pour le moment (sera activé au strike)
+		lightning_instance.visible = false
+		lightning_instance.set_process(false)
+		lightning_instance.set_physics_process(false)
+		
+		# Si la scène a une méthode pour la préparer
+		if lightning_instance.has_method("prepare_for_strike"):
+			lightning_instance.prepare_for_strike()
+		
+		# Ajouter à la scène
+		get_tree().current_scene.add_child(lightning_instance)
+		lightning_scenes.append(lightning_instance)
+		
+		print("⚡ Loaded Lightning scene at: ", target_data.position)
+
+# Fallback vers animations par code si la scène n'existe pas
 func create_lightning_animations():
+	print("🔄 Fallback: Creating code-based lightning animations...")
+	
 	for target_data in target_enemies:
 		var lightning_anim = create_lightning_animation_sprite(target_data.position)
-		lightning_animations.append(lightning_anim)
+		lightning_scenes.append(lightning_anim)  # Même array pour simplicité
 		get_tree().current_scene.add_child(lightning_anim)
 
 func create_lightning_animation_sprite(pos: Vector2) -> Sprite2D:
 	var lightning_sprite = Sprite2D.new()
 	
-	# Créer une texture d'éclair vertical
+	# Créer une texture d'éclair vertical simple
 	var lightning_width = 32
-	var lightning_height = int(strike_radius * 2.5)  # Un peu plus haut
+	var lightning_height = int(strike_radius * 2.5)
 	var image = Image.create(lightning_width, lightning_height, false, Image.FORMAT_RGBA8)
 	
-	# Dessiner l'éclair avec du bruit
+	# Dessiner un éclair simple
 	var center_x = lightning_width / 2
-	var segments = 20
-	var points = []
-	
-	# Créer les points de l'éclair avec variation
-	for i in range(segments + 1):
-		var y = (float(i) / segments) * lightning_height
-		var x_variation = randf_range(-8, 8) if i > 0 and i < segments else 0
+	for y in range(lightning_height):
+		var x_variation = randf_range(-4, 4) if y % 8 == 0 else 0
 		var x = center_x + x_variation
-		points.append(Vector2(x, y))
-	
-	# Dessiner les segments de l'éclair
-	for i in range(points.size() - 1):
-		draw_lightning_segment(image, points[i], points[i + 1])
+		if x >= 0 and x < lightning_width:
+			image.set_pixel(int(x), y, Color.WHITE)
 	
 	var texture = ImageTexture.new()
 	texture.set_image(image)
 	lightning_sprite.texture = texture
-	
-	# POSITIONNER AU CENTRE DU CERCLE (pas au-dessus)
 	lightning_sprite.global_position = pos - Vector2(lightning_width / 2, lightning_height / 2)
-	
-	# COMMENCER INVISIBLE - sera rendu visible au strike
 	lightning_sprite.modulate.a = 0.0
-	lightning_sprite.z_index = 10  # Au-dessus de tout
+	lightning_sprite.z_index = 10
 	
 	return lightning_sprite
-
-func draw_lightning_segment(image: Image, start: Vector2, end: Vector2):
-	var distance = start.distance_to(end)
-	var steps = int(distance)
-	
-	for i in range(steps):
-		var t = float(i) / float(steps) if steps > 0 else 0.0
-		var pos = start.lerp(end, t)
-		
-		# Ajouter variation pour effet d'éclair
-		pos.x += randf_range(-1, 1)
-		
-		var x = int(pos.x)
-		var y = int(pos.y)
-		
-		# Dessiner le point principal en blanc brillant
-		if x >= 0 and x < image.get_width() and y >= 0 and y < image.get_height():
-			image.set_pixel(x, y, Color.WHITE)
-		
-		# Ajouter des branches aléatoires
-		if randf() < 0.1:  # 10% de chance de branche
-			var branch_length = randi_range(3, 8)
-			var branch_angle = randf_range(-PI/3, PI/3)
-			var branch_end = pos + Vector2(cos(branch_angle), sin(branch_angle)) * branch_length
-			
-			# Dessiner mini-branche
-			var bx = int(branch_end.x)
-			var by = int(branch_end.y)
-			if bx >= 0 and bx < image.get_width() and by >= 0 and by < image.get_height():
-				image.set_pixel(bx, by, Color(0.8, 0.8, 1.0, 0.8))
 
 func strike_all_targets():
 	print("⚡ LIGHTNING STRIKES!")
@@ -187,36 +182,59 @@ func strike_all_targets():
 			warning.queue_free()
 	warning_circles.clear()
 	
-	# MONTRER les animations de foudre et frapper
+	# ACTIVER les vraies scènes de foudre et frapper
 	for i in range(target_enemies.size()):
 		var target_data = target_enemies[i]
 		
-		# Rendre l'animation visible avec effet flash
-		if i < lightning_animations.size() and is_instance_valid(lightning_animations[i]):
-			var lightning_anim = lightning_animations[i]
-			lightning_anim.modulate.a = 1.0
+		# Activer et animer la vraie scène
+		if i < lightning_scenes.size() and is_instance_valid(lightning_scenes[i]):
+			var lightning_scene = lightning_scenes[i]
 			
-			# Effet de flash CORRIGÉ
-			var flash_tween = create_tween()
-			flash_tween.tween_property(lightning_anim, "modulate", Color.WHITE, 0.1)
-			flash_tween.tween_property(lightning_anim, "modulate", Color.CYAN, 0.1)
-			flash_tween.tween_property(lightning_anim, "modulate", Color.WHITE, 0.1)
-			flash_tween.tween_property(lightning_anim, "modulate", Color.WHITE, 0.5)  # PAUSE au lieu de tween_delay
-			flash_tween.tween_property(lightning_anim, "modulate:a", 0.0, 0.3)
-			flash_tween.tween_callback(func(): 
-				if is_instance_valid(lightning_anim):
-					lightning_anim.queue_free()
-			)
+			# Si c'est une vraie scène Lightning_projectile
+			if lightning_scene.has_method("activate_strike"):
+				lightning_scene.visible = true
+				lightning_scene.set_process(true)
+				lightning_scene.set_physics_process(true)
+				lightning_scene.activate_strike()
+				print("⚡ Activated real Lightning scene!")
+			
+			# Si c'est une vraie scène avec AnimationPlayer
+			elif lightning_scene.has_method("get_node") and lightning_scene.has_node("AnimationPlayer"):
+				lightning_scene.visible = true
+				var anim_player = lightning_scene.get_node("AnimationPlayer")
+				if anim_player.has_animation("strike") or anim_player.has_animation("lightning_strike"):
+					var anim_name = "strike" if anim_player.has_animation("strike") else "lightning_strike"
+					anim_player.play(anim_name)
+					print("⚡ Playing animation: ", anim_name)
+				else:
+					# Jouer la première animation trouvée
+					var animations = anim_player.get_animation_list()
+					if animations.size() > 0:
+						anim_player.play(animations[0])
+						print("⚡ Playing first animation: ", animations[0])
+			
+			# Fallback : animation simple par code
+			else:
+				lightning_scene.visible = true
+				lightning_scene.modulate.a = 1.0
+				
+				var flash_tween = create_tween()
+				flash_tween.tween_property(lightning_scene, "modulate", Color.WHITE, 0.1)
+				flash_tween.tween_property(lightning_scene, "modulate", Color.CYAN, 0.1)
+				flash_tween.tween_property(lightning_scene, "modulate", Color.WHITE, 0.1)
+				flash_tween.tween_property(lightning_scene, "modulate", Color.WHITE, 0.5)
+				flash_tween.tween_property(lightning_scene, "modulate:a", 0.0, 0.3)
 		
 		# Frapper la position
 		strike_position(target_data.position)
-		await get_tree().create_timer(0.15).timeout  # Petit délai entre les frappes
+		await get_tree().create_timer(0.15).timeout
 	
-	# Nettoyer les animations restantes
-	for anim in lightning_animations:
-		if is_instance_valid(anim):
-			anim.queue_free()
-	lightning_animations.clear()
+	# Nettoyer les scènes après 2 secondes
+	await get_tree().create_timer(2.0).timeout
+	for scene in lightning_scenes:
+		if is_instance_valid(scene):
+			scene.queue_free()
+	lightning_scenes.clear()
 	
 	# Détruire le projectile
 	queue_free()
@@ -224,7 +242,7 @@ func strike_all_targets():
 func strike_position(strike_pos: Vector2):
 	print("⚡ Lightning strikes at: ", strike_pos)
 	
-	# Créer l'effet au sol aussi
+	# Créer l'effet au sol
 	create_ground_lightning_effect(strike_pos)
 	
 	# Chercher tous les ennemis dans le rayon

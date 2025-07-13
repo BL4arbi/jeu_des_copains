@@ -243,13 +243,10 @@ func handle_weapon_switch():
 			print("Switched to: ", weapons[current_weapon].projectile_name)
 	
 	# Changement d'arme avec flèches
-	if Input.is_action_just_pressed("ui_up") and weapons.size() > 1:
-		current_weapon = (current_weapon + 1) % weapons.size()
-		print("Switched to: ", weapons[current_weapon].projectile_name)
-	
-	# === DROP D'ARME AVEC ESPACE ===
-	if Input.is_action_just_pressed("ui_accept") and Input.is_key_pressed(KEY_SPACE):
+	if Input.is_action_just_pressed("drop"):
 		drop_current_weapon()
+	
+
 
 # === FONCTION : Drop de l'arme actuelle ===
 func drop_current_weapon():
