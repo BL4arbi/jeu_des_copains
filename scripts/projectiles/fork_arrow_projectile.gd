@@ -1,4 +1,4 @@
-# ForkArrowProjectile.gd - Version corrigée pour voir les projectiles fork
+# ForkArrowProjectile.gd - Version corrigée qui fork TOUJOURS
 extends BaseProjectile
 class_name ForkArrowProjectile
 
@@ -16,6 +16,8 @@ var targets_pierced: int = 0
 
 func _ready():
 	super._ready()
+	# AJOUT : Connecter le signal pour que _on_hit_target soit appelé
+	body_entered.connect(_on_hit_target)
 	setup_fork_arrow()
 
 func setup_fork_arrow():
@@ -57,19 +59,23 @@ func _on_hit_target(body):
 	if not should_damage_target(body):
 		return
 	
-	if body.has_method("take_damage"):
-		var initial_damage = damage * damage_multiplier
-		body.take_damage(initial_damage)
-		print("✅ Initial damage: ", initial_damage)
-		targets_pierced += 1
-	
-	if targets_pierced < piercing_power:
-		print("🏹 Arrow pierces through (", targets_pierced, "/", piercing_power, ")")
-		return
-	
+	# CORRECTION : Fork TOUJOURS en premier, même si ça va tuer
 	if not has_forked:
 		create_fork_projectiles(body.global_position)
 		has_forked = true
+		print("🏹 Forked at enemy position")
+	
+	# Puis infliger les dégâts
+	if body.has_method("take_damage"):
+		var initial_damage = damage * damage_multiplier
+		body.take_damage(initial_damage)
+		print("✅ Fork Arrow damage: ", initial_damage)
+		targets_pierced += 1
+	
+	# Vérifier piercing APRÈS fork et dégâts
+	if targets_pierced < piercing_power:
+		print("🏹 Arrow pierces through (", targets_pierced, "/", piercing_power, ")")
+		return
 	
 	queue_free()
 
@@ -79,14 +85,13 @@ func create_fork_projectiles(impact_position: Vector2):
 	var nearby_targets = find_nearby_targets(impact_position)
 	
 	for i in range(fork_count):
-		# CORRECTION : Délai pour voir les projectiles apparaître
+		# Spawn immédiat des forks
 		call_deferred("spawn_fork_projectile", i, impact_position, nearby_targets)
 
-# NOUVELLE MÉTHODE : Spawn différé pour voir les forks
 func spawn_fork_projectile(fork_index: int, impact_position: Vector2, nearby_targets: Array):
-	var fork = create_fork_projectile()
-	if not fork:
-		return
+	# CORRECTION : Utiliser la scène BasicProjectile existante
+	var fork_scene = load("res://scenes/projectiles/BasicProjectile.tscn")
+	var fork = fork_scene.instantiate()
 	
 	get_tree().current_scene.add_child(fork)
 	fork.global_position = impact_position
@@ -97,13 +102,10 @@ func spawn_fork_projectile(fork_index: int, impact_position: Vector2, nearby_tar
 	# Configuration de la fork
 	var fork_damage = damage * fork_damage_ratio * damage_multiplier
 	var fork_speed = speed * fork_speed_ratio
-	var fork_lifetime = lifetime * 0.8  # Plus long pour voir les forks
+	var fork_lifetime = lifetime * 0.8
 	
 	fork.setup(fork_damage, fork_speed, fork_lifetime)
-	
-	# AJOUT : Configuration visuelle spéciale pour les forks
 	fork.set_owner_type(owner_type)
-	fork.projectile_type = "fork_child"  # Type spécial pour les forks
 	
 	# Couleur distincte pour les forks
 	if fork.sprite:
@@ -149,38 +151,6 @@ func calculate_fork_direction(fork_index: int, nearby_targets: Array, impact_pos
 		
 		return Vector2(cos(fork_angle), sin(fork_angle))
 
-func create_fork_projectile() -> BaseProjectile:
-	# Utiliser BaseProjectile directement au lieu de BasicProjectile
-	var fork_projectile = BaseProjectile.new()
-	
-	# AJOUT : Ajouter manuellement les composants nécessaires
-	var collision_shape = CollisionShape2D.new()
-	var circle_shape = CircleShape2D.new()
-	circle_shape.radius = 4.0
-	collision_shape.shape = circle_shape
-	fork_projectile.add_child(collision_shape)
-	
-	var sprite = Sprite2D.new()
-	# Créer un sprite simple pour la fork
-	var image = Image.create(12, 12, false, Image.FORMAT_RGBA8)
-	var center = Vector2(6, 6)
-	for x in range(12):
-		for y in range(12):
-			var distance = Vector2(x, y).distance_to(center)
-			if distance <= 4:
-				image.set_pixel(x, y, Color.LIGHT_BLUE)
-	
-	var texture = ImageTexture.new()
-	texture.set_image(image)
-	sprite.texture = texture
-	fork_projectile.add_child(sprite)
-	
-	# Assigner le sprite à la variable
-	fork_projectile.sprite = sprite
-	fork_projectile.collision_shape = collision_shape
-	
-	return fork_projectile
-
 func should_damage_target(body) -> bool:
 	match owner_type:
 		"player":
@@ -189,12 +159,3 @@ func should_damage_target(body) -> bool:
 			return body.is_in_group("players")
 		_:
 			return true
-
-# AJOUT : Override pour BaseProjectile pour différencier les forks
-func setup_visual_effects():
-	super.setup_visual_effects()
-	
-	# Si c'est un fork enfant, couleur spéciale
-	if projectile_type == "fork_child" and sprite:
-		sprite.modulate = Color.LIGHT_BLUE
-		sprite.scale = Vector2(0.7, 0.7)

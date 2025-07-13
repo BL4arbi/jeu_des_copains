@@ -46,7 +46,6 @@ func _ready():
 	# Créer la hitbox mêlée
 	setup_melee_hitbox()
 	
-	print("Enemy ready: ", enemy_type)
 
 func setup_melee_hitbox():
 	# Créer une hitbox mêlée temporaire
@@ -167,7 +166,6 @@ func start_melee_attack():
 	if not can_melee_attack():
 		return
 	
-	print(name, " attacks!")
 	
 	is_melee_attacking = true
 	melee_attack_duration = 0.5
@@ -188,9 +186,16 @@ func end_melee_attack():
 	
 	is_melee_attacking = false
 	
-	call_deferred("disable_melee_hitbox")
+	# CORRECTION : Appeler directement au lieu de call_deferred
+	disable_melee_hitbox()
 	
 	hide_melee_attack_visual()
+
+# AJOUT : Méthode manquante
+func disable_melee_hitbox():
+	if melee_hitbox and is_instance_valid(melee_hitbox):
+		melee_hitbox.monitoring = false
+
 
 func _on_melee_hit_player(body):
 	if not is_melee_attacking:
@@ -210,7 +215,7 @@ func _on_melee_hit_player(body):
 				melee_damage = damage
 		
 		body.take_damage(melee_damage)
-		print("Melee hit for ", melee_damage, " damage!")
+
 		
 		# Finir l'attaque après avoir touché
 		end_melee_attack()
@@ -430,7 +435,6 @@ func update_animation():
 	elif not is_moving and animation_player.has_animation("idle"):
 		animation_player.play("idle")
 func die():
-	print(name, " died!")
 	
 	# Stocker les infos AVANT queue_free()
 	var death_type = enemy_type
@@ -457,7 +461,6 @@ func signal_enemy_death_deferred():
 	var drop_system = get_tree().get_first_node_in_group("drop_system")
 	if drop_system and drop_system.has_method("_on_enemy_killed"):
 		drop_system._on_enemy_killed(enemy_type, global_position)
-		print("Death signaled to drop system: ", enemy_type)
 	else:
 		print("Drop system not found!")
 func configure_enemy_deferred(enemy_type_data: Dictionary):
@@ -494,4 +497,3 @@ func signal_enemy_death():
 	if GlobalData.has_signal("enemy_killed"):
 		GlobalData.enemy_killed.emit(enemy_type, global_position)
 	
-	print("Enemy death signaled: ", enemy_type, " at ", global_position)

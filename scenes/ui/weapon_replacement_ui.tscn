@@ -1,0 +1,47 @@
+[gd_scene load_steps=2 format=3 uid="uid://dgpkiwmxpcbyp"]
+
+[ext_resource type="Script" uid="uid://drxq6y77uodeh" path="res://scripts/ui/weapon_replacement_ui.gd" id="1_t7g5s"]
+
+[node name="WeaponReplacementUI" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_t7g5s")
+
+[node name="Background" type="ColorRect" parent="."]
+layout_mode = 0
+offset_right = 40.0
+offset_bottom = 40.0
+
+[node name="Panel" type="Panel" parent="Background"]
+layout_mode = 0
+offset_right = 40.0
+offset_bottom = 40.0
+
+[node name="TitleLabel" type="Label" parent="Background/Panel"]
+layout_mode = 0
+offset_right = 40.0
+offset_bottom = 23.0
+
+[node name="NewWeaponLabel" type="Label" parent="Background/Panel"]
+layout_mode = 0
+offset_right = 40.0
+offset_bottom = 23.0
+
+[node name="InstructionLabel" type="Label" parent="Background/Panel"]
+layout_mode = 0
+offset_right = 40.0
+offset_bottom = 23.0
+
+[node name="WeaponsContainer" type="HBoxContainer" parent="Background/Panel"]
+layout_mode = 0
+offset_right = 40.0
+offset_bottom = 40.0
+
+[node name="CancelButton" type="Button" parent="Background/Panel"]
+layout_mode = 0
+offset_right = 8.0
+offset_bottom = 8.0
