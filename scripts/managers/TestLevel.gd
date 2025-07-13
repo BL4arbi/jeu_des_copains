@@ -9,7 +9,7 @@ extends Node2D
 @onready var health_bar: ProgressBar = get_node_or_null("CanvasLayer/HUD/HealthBar")
 @onready var kill_counter: Label = get_node_or_null("CanvasLayer/HUD/KillCounter")
 @onready var level_info: Label = get_node_or_null("CanvasLayer/HUD/LevelInfo")
-#fix
+#test
 func _ready():
 	print("=== TestLevel Ready ===")
 	print("GlobalData player_stats: ", GlobalData.player_stats)
