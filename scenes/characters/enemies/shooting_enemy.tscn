@@ -1,8 +1,8 @@
 [gd_scene load_steps=9 format=3 uid="uid://dgrgaoyc45m6w"]
 
-[ext_resource type="Script" uid="uid://c2cymgyhgge18" path="res://SCRIPTS/enemies/BaseEnemy.gd" id="1_2ampc"]
+[ext_resource type="Script" uid="uid://c2cymgyhgge18" path="res://scripts/enemies/BaseEnemy.gd" id="1_2ampc"]
 [ext_resource type="Texture2D" uid="uid://cv1npigxuwrvm" path="res://assets/SPRITES/enemies/boule_de_haine.png" id="1_4xw7u"]
-[ext_resource type="Script" uid="uid://cowdw5bg5gcng" path="res://SCENES/characters/enemies/health_bar.gd" id="3_6veht"]
+[ext_resource type="Script" uid="uid://cowdw5bg5gcng" path="res://scenes/characters/enemies/health_bar.gd" id="3_6veht"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_2ampc"]
 radius = 21.587
