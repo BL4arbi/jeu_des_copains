@@ -1,199 +1,95 @@
-# BuffSystem.gd - Système de buffs corrigé avec effets de statut
+# BuffSystem.gd - Buffs permanents ultra simple (CORRIGÉ)
 extends Node
 class_name BuffSystem
 
-# Types de buffs disponibles
+# Types de buffs permanents
 enum BuffType {
-	DAMAGE_BOOST,      # +% dégâts
-	HEALTH_REGEN,      # Régénération de vie
-	SPEED_BOOST,       # +% vitesse
-	FIRE_RATE_BOOST,   # +% cadence de tir
-	ARMOR_BOOST,       # Réduction de dégâts
-	LIFESTEAL,         # Vol de vie
-	MULTISHOT,         # +1 projectile par tir
-	CHAIN_LIGHTNING,   # Chaîne d'éclairs
-	EXPLOSION_RADIUS,  # Rayon d'explosion
-	PENETRATION,       # Perforation
-	POISON_DAMAGE,     # Dégâts poison fixes
-	FIRE_DAMAGE,       # Dégâts feu basés sur HP max
-	ICE_SLOW,          # Ralentissement glacial
-	LIGHTNING_STUN     # Étourdissement foudroyant
+	DAMAGE_BOOST,
+	HEALTH_BOOST,
+	SPEED_BOOST,
+	FIRE_RATE_BOOST,
+	ARMOR_BOOST,
+	LIFESTEAL,
+	MULTISHOT,
+	PENETRATION
 }
 
-# Base de données des buffs avec icônes Unicode
+# Base de données des buffs PERMANENTS
 var buff_database: Dictionary = {
 	BuffType.DAMAGE_BOOST: {
-		"name": "Rage de Combat",
-		"description": "+25% de dégâts",
+		"name": "Force Permanente",
+		"description": "+10 dégâts permanents",
 		"icon": "💪",
-		"rarity": "common",
-		"value": 0.25,
-		"duration": 30.0
+		"value": 10.0
 	},
-	BuffType.HEALTH_REGEN: {
-		"name": "Régénération",
-		"description": "+3 HP par seconde",
+	BuffType.HEALTH_BOOST: {
+		"name": "Vitalité Permanente", 
+		"description": "+50 HP max permanents",
 		"icon": "❤️",
-		"rarity": "common",
-		"value": 3.0,
-		"duration": 25.0
+		"value": 50.0
 	},
 	BuffType.SPEED_BOOST: {
-		"name": "Vélocité",
-		"description": "+35% de vitesse",
+		"name": "Vitesse Permanente",
+		"description": "+30 vitesse permanente",
 		"icon": "⚡",
-		"rarity": "common",
-		"value": 0.35,
-		"duration": 20.0
+		"value": 30.0
 	},
 	BuffType.FIRE_RATE_BOOST: {
-		"name": "Tir Rapide",
-		"description": "+50% de cadence",
+		"name": "Cadence Permanente",
+		"description": "+20% cadence permanente",
 		"icon": "🔫",
-		"rarity": "rare",
-		"value": 0.5,
-		"duration": 25.0
+		"value": 0.2
 	},
 	BuffType.ARMOR_BOOST: {
-		"name": "Carapace",
-		"description": "-30% de dégâts reçus",
+		"name": "Armure Permanente",
+		"description": "+15% résistance permanente",
 		"icon": "🛡️",
-		"rarity": "rare",
-		"value": 0.3,
-		"duration": 30.0
+		"value": 0.15
 	},
 	BuffType.LIFESTEAL: {
-		"name": "Vampirisme",
-		"description": "20% de vol de vie",
+		"name": "Vol de Vie Permanent",
+		"description": "+10% vol de vie permanent",
 		"icon": "🧛",
-		"rarity": "epic",
-		"value": 0.2,
-		"duration": 40.0
+		"value": 0.1
 	},
 	BuffType.MULTISHOT: {
-		"name": "Tir Multiple",
-		"description": "+1 projectile par tir",
+		"name": "Tir Multiple Permanent",
+		"description": "+1 projectile permanent",
 		"icon": "🎯",
-		"rarity": "epic",
-		"value": 1,
-		"duration": 35.0
-	},
-	BuffType.CHAIN_LIGHTNING: {
-		"name": "Chaîne Foudroyante",
-		"description": "30% chance éclairs",
-		"icon": "⚡",
-		"rarity": "legendary",
-		"value": 0.3,
-		"duration": 45.0
-	},
-	BuffType.EXPLOSION_RADIUS: {
-		"name": "Explosions Massives",
-		"description": "+60% rayon explosion",
-		"icon": "💥",
-		"rarity": "legendary",
-		"value": 0.6,
-		"duration": 40.0
+		"value": 1
 	},
 	BuffType.PENETRATION: {
-		"name": "Perforant Ultime",
-		"description": "Traverse 2 ennemis",
+		"name": "Perforation Permanente",
+		"description": "+1 perforation permanente",
 		"icon": "🏹",
-		"rarity": "legendary",
-		"value": 2,
-		"duration": 30.0
-	},
-	BuffType.POISON_DAMAGE: {
-		"name": "Toxines Mortelles",
-		"description": "+5 DPS poison 8s",
-		"icon": "☠️",
-		"rarity": "rare",
-		"value": 5.0,
-		"duration": 30.0
-	},
-	BuffType.FIRE_DAMAGE: {
-		"name": "Flammes Infernales",
-		"description": "+3% HP max DPS feu 6s",
-		"icon": "🔥",
-		"rarity": "epic",
-		"value": 0.03,
-		"duration": 35.0
-	},
-	BuffType.ICE_SLOW: {
-		"name": "Gel Arctique",
-		"description": "Ralentit ennemis 4s",
-		"icon": "❄️",
-		"rarity": "rare",
-		"value": 0.6,
-		"duration": 25.0
-	},
-	BuffType.LIGHTNING_STUN: {
-		"name": "Foudre Paralysante",
-		"description": "Paralyse ennemis 2s",
-		"icon": "⚡",
-		"rarity": "epic",
-		"value": 2.0,
-		"duration": 30.0
+		"value": 1
 	}
 }
 
-# Tables de drops par type d'ennemi
+# Tables de drops simplifiées
 var buff_drop_tables: Dictionary = {
 	"Grunt": {
-		"drop_chance": 0.12,
-		"buffs": [
-			{"type": BuffType.DAMAGE_BOOST, "weight": 35},
-			{"type": BuffType.HEALTH_REGEN, "weight": 30},
-			{"type": BuffType.SPEED_BOOST, "weight": 25},
-			{"type": BuffType.POISON_DAMAGE, "weight": 10}
-		]
+		"drop_chance": 0.1,
+		"buffs": [BuffType.DAMAGE_BOOST, BuffType.HEALTH_BOOST, BuffType.SPEED_BOOST]
 	},
 	"Shooter": {
-		"drop_chance": 0.18,
-		"buffs": [
-			{"type": BuffType.FIRE_RATE_BOOST, "weight": 25},
-			{"type": BuffType.ARMOR_BOOST, "weight": 20},
-			{"type": BuffType.ICE_SLOW, "weight": 20},
-			{"type": BuffType.FIRE_DAMAGE, "weight": 15},
-			{"type": BuffType.LIFESTEAL, "weight": 15},
-			{"type": BuffType.PENETRATION, "weight": 5}
-		]
+		"drop_chance": 0.15,
+		"buffs": [BuffType.FIRE_RATE_BOOST, BuffType.ARMOR_BOOST, BuffType.LIFESTEAL]
 	},
 	"Elite": {
-		"drop_chance": 0.45,
-		"buffs": [
-			{"type": BuffType.MULTISHOT, "weight": 20},
-			{"type": BuffType.CHAIN_LIGHTNING, "weight": 18},
-			{"type": BuffType.EXPLOSION_RADIUS, "weight": 15},
-			{"type": BuffType.LIGHTNING_STUN, "weight": 15},
-			{"type": BuffType.PENETRATION, "weight": 12},
-			{"type": BuffType.LIFESTEAL, "weight": 12},
-			{"type": BuffType.FIRE_DAMAGE, "weight": 8}
-		]
+		"drop_chance": 0.25,
+		"buffs": [BuffType.MULTISHOT, BuffType.PENETRATION, BuffType.LIFESTEAL, BuffType.ARMOR_BOOST]
 	}
 }
 
-# Variables du système
 var player_ref: Player = null
-var active_buffs: Array = []
-var total_kills: int = 0
 
 func _ready():
 	add_to_group("buff_system")
-	
-	# Trouver le joueur
 	player_ref = get_tree().get_first_node_in_group("players")
-	
-	# Timer pour update des buffs
-	var buff_timer = Timer.new()
-	add_child(buff_timer)
-	buff_timer.wait_time = 1.0
-	buff_timer.timeout.connect(_update_buffs)
-	buff_timer.start()
-	
-	print("⭐ Buff system initialized")
+	print("⭐ Permanent Buff system ready")
 
 func _on_enemy_killed(enemy_type: String, enemy_position: Vector2):
-	total_kills += 1
 	try_drop_buff(enemy_type, enemy_position)
 
 func try_drop_buff(enemy_type: String, position: Vector2):
@@ -201,298 +97,235 @@ func try_drop_buff(enemy_type: String, position: Vector2):
 		return
 	
 	var drop_data = buff_drop_tables[enemy_type]
-	var base_chance = drop_data.drop_chance
 	
-	# Bonus de chance selon la progression
-	var chance_multiplier = 1.0 + (total_kills * 0.002)
-	var final_chance = base_chance * chance_multiplier
-	
-	if randf() < final_chance:
-		var buff_type = choose_buff_from_table(drop_data.buffs)
-		if buff_type != -1:
-			create_buff_pickup(buff_type, position)
+	if randf() < drop_data.drop_chance:
+		var buff_type = drop_data.buffs[randi() % drop_data.buffs.size()]
+		create_simple_buff_pickup(buff_type, position)
 
-func choose_buff_from_table(buffs: Array) -> int:
-	var total_weight = 0
-	for buff in buffs:
-		total_weight += buff.weight
-	
-	if total_weight == 0:
-		return -1
-	
-	var random_value = randf() * total_weight
-	var current_weight = 0
-	
-	for buff in buffs:
-		current_weight += buff.weight
-		if random_value <= current_weight:
-			return buff.type
-	
-	return buffs[0].type if buffs.size() > 0 else -1
-
-func create_buff_pickup(buff_type: int, position: Vector2):
-	# Créer pickup directement sans scène séparée
+func create_simple_buff_pickup(buff_type: int, position: Vector2):
+	# Créer un Area2D ultra simple
 	var pickup = Area2D.new()
-	pickup.collision_layer = 0
-	pickup.collision_mask = 1
+	pickup.name = "BuffPickup"
 	
-	# Collision shape
+	# COLLISION CORRIGÉE - Si player est layer 1, le pickup doit être layer 2
+	pickup.collision_layer = 2     # Pickup sur layer 2
+	pickup.collision_mask = 1      # Détecte layer 1 (player)
+	pickup.monitoring = true       # IMPORTANT!
+	pickup.monitorable = true      # Pour que le player puisse le détecter
+	
+	# Collision shape ÉNORME pour être sûr
 	var collision = CollisionShape2D.new()
 	var shape = CircleShape2D.new()
-	shape.radius = 25.0
+	shape.radius = 60.0  # ÉNORME
 	collision.shape = shape
 	pickup.add_child(collision)
 	
-	# Configuration des données
+	# VRAIE ICÔNE avec texture sprite existante
+	var sprite = Sprite2D.new()
+	pickup.add_child(sprite)
+	
+	# Utiliser une vraie texture du jeu selon le buff
+	var sprite_path = get_buff_sprite_path(buff_type)
+	if ResourceLoader.exists(sprite_path):
+		sprite.texture = load(sprite_path)
+	else:
+		# Fallback - carré coloré
+		var image = Image.create(32, 32, false, Image.FORMAT_RGBA8)
+		var color = get_buff_color(buff_type)
+		image.fill(color)
+		var texture = ImageTexture.new()
+		texture.set_image(image)
+		sprite.texture = texture
+	
+	sprite.scale = Vector2(3, 3)  # GROS pour bien voir
+	sprite.modulate = get_buff_color(buff_type)  # Couleur selon le buff
+	
+	# Label avec nom PLUS GROS
+	var label = Label.new()
 	var buff_data = buff_database[buff_type]
+	label.text = buff_data.icon + " " + buff_data.name
+	label.position = Vector2(-80, -60)
+	label.add_theme_font_size_override("font_size", 14)
+	label.add_theme_color_override("font_color", Color.YELLOW)
+	pickup.add_child(label)
+	
+	# Indicateur visuel supplémentaire
+	var glow = Sprite2D.new()
+	pickup.add_child(glow)
+	glow.z_index = -1
+	var glow_image = Image.create(80, 80, false, Image.FORMAT_RGBA8)
+	var glow_color = get_buff_color(buff_type)
+	glow_color.a = 0.5
+	glow_image.fill(glow_color)
+	var glow_texture = ImageTexture.new()
+	glow_texture.set_image(glow_image)
+	glow.texture = glow_texture
+	glow.position = Vector2(-40, -40)
+	
+	# Métadonnées
 	pickup.set_meta("buff_type", buff_type)
 	pickup.set_meta("buff_data", buff_data)
 	
-	# Sprite avec icône
-	var sprite = create_buff_sprite(buff_data)
-	pickup.add_child(sprite)
+	# Position
+	pickup.global_position = position + Vector2(randf_range(-30, 30), randf_range(-30, 30))
 	
-	# Labels
-	var name_label = Label.new()
-	name_label.text = buff_data.name
-	name_label.position = Vector2(-50, -50)
-	name_label.add_theme_color_override("font_color", get_rarity_color(buff_data.rarity))
-	name_label.add_theme_font_size_override("font_size", 12)
-	pickup.add_child(name_label)
-	
-	var timer_label = Label.new()
-	timer_label.position = Vector2(-15, -70)
-	timer_label.add_theme_color_override("font_color", Color.YELLOW)
-	timer_label.add_theme_font_size_override("font_size", 10)
-	pickup.add_child(timer_label)
-	pickup.set_meta("timer_label", timer_label)
-	
-	# Position et spawn
-	var random_offset = Vector2(randf_range(-40, 40), randf_range(-40, 40))
-	pickup.global_position = position + random_offset
-	
-	# Timer de despawn
-	pickup.set_meta("despawn_timer", 12.0)
-	
-	# Connexion du signal
-	pickup.body_entered.connect(_on_buff_pickup.bind(pickup))
-	
+	# Ajouter à la scène AVANT de connecter
 	get_tree().current_scene.add_child(pickup)
 	
-	# Animation flottante
-	create_floating_animation(pickup)
+	# Attendre puis connecter le signal SANS bind()
+	await get_tree().process_frame
+	pickup.body_entered.connect(func(body): _on_pickup_touched(pickup, body))
 	
-	print("⭐ ", buff_data.name, " buff dropped!")
+	# Timer de despawn
+	var timer = Timer.new()
+	pickup.add_child(timer)
+	timer.wait_time = 15.0
+	timer.one_shot = true
+	timer.timeout.connect(pickup.queue_free)
+	timer.start()
+	
+	print("⭐ Created ", buff_data.name, " at ", position, " | Collision layer: ", pickup.collision_layer, " mask: ", pickup.collision_mask)
 
-func create_buff_sprite(buff_data: Dictionary) -> Sprite2D:
-	var sprite = Sprite2D.new()
-	
-	# Créer texture avec icône et couleur de rareté
-	var image = Image.create(64, 64, false, Image.FORMAT_RGBA8)
-	var center = Vector2(32, 32)
-	var base_color = get_rarity_color(buff_data.rarity)
-	
-	# Cercle avec gradient
-	for x in range(64):
-		for y in range(64):
-			var distance = Vector2(x, y).distance_to(center)
-			if distance <= 28:
-				var intensity = 1.0 - (distance / 28.0) * 0.4
-				var alpha = 1.0 - (distance / 28.0) * 0.3
-				var color = Color(
-					base_color.r * intensity,
-					base_color.g * intensity,
-					base_color.b * intensity,
-					alpha
-				)
-				image.set_pixel(x, y, color)
-			elif distance <= 30:
-				image.set_pixel(x, y, Color(1.0, 1.0, 1.0, 0.8))
-	
-	var texture = ImageTexture.new()
-	texture.set_image(image)
-	sprite.texture = texture
-	sprite.scale = Vector2(1.2, 1.2)
-	
-	# Label pour l'icône (superposé)
-	var icon_label = Label.new()
-	icon_label.text = buff_data.icon
-	icon_label.position = Vector2(-12, -12)
-	icon_label.add_theme_font_size_override("font_size", 24)
-	sprite.add_child(icon_label)
-	
-	return sprite
-
-func create_floating_animation(pickup: Area2D):
-	var start_y = pickup.position.y
-	var tween = create_tween()
-	tween.set_loops()
-	tween.tween_property(pickup, "position:y", start_y - 10, 1.8)
-	tween.tween_property(pickup, "position:y", start_y + 10, 1.8)
-
-func _process(delta):
-	# Update des timers de pickups
-	var pickups = get_tree().get_nodes_in_group("buff_pickups")
-	for pickup in pickups:
-		if pickup.has_meta("despawn_timer"):
-			var timer = pickup.get_meta("despawn_timer") - delta
-			pickup.set_meta("despawn_timer", timer)
-			
-			var timer_label = pickup.get_meta("timer_label")
-			if timer_label and is_instance_valid(timer_label):
-				timer_label.text = str(int(timer)) + "s"
-			
-			if timer <= 0:
-				pickup.queue_free()
-
-func _on_buff_pickup(pickup: Area2D, body):
-	if body.is_in_group("players"):
-		var buff_type = pickup.get_meta("buff_type")
-		apply_buff_to_player(buff_type)
-		
-		# Effet de pickup
-		create_pickup_effect(pickup.global_position, pickup.get_meta("buff_data"))
-		pickup.queue_free()
-
-func apply_buff_to_player(buff_type: int):
-	if not player_ref:
+func _on_pickup_touched(pickup: Area2D, body):
+	if not body.is_in_group("players"):
 		return
 	
-	var buff_data = buff_database[buff_type].duplicate()
-	buff_data["type"] = buff_type
-	buff_data["remaining_time"] = buff_data.duration
+	var buff_type = pickup.get_meta("buff_type")
+	var buff_data = pickup.get_meta("buff_data")
 	
-	# Vérifier si le buff existe déjà
-	for i in range(active_buffs.size()):
-		if active_buffs[i].type == buff_type:
-			active_buffs[i].remaining_time = buff_data.duration
-			print("🔄 Buff renewed: ", buff_data.name)
-			return
+	print("✅ Player got permanent buff: ", buff_data.name)
 	
-	# Ajouter le nouveau buff
-	active_buffs.append(buff_data)
-	apply_buff_effect(buff_type, buff_data.value, true)
+	# Appliquer le buff PERMANENT au joueur
+	apply_permanent_buff(buff_type, buff_data.value)
 	
-	print("⭐ Buff applied: ", buff_data.name)
-	show_buff_notification(buff_data)
+	# Notification
+	show_buff_notification(buff_data.name, buff_data.icon)
+	
+	# Effet visuel
+	create_pickup_effect(pickup.global_position)
+	
+	# Détruire le pickup
+	pickup.queue_free()
 
-func apply_buff_effect(buff_type: int, value: float, is_applying: bool):
+func apply_permanent_buff(buff_type: int, value: float):
 	if not player_ref:
 		return
-	
-	var multiplier = 1.0 if is_applying else -1.0
 	
 	match buff_type:
 		BuffType.DAMAGE_BOOST:
-			if is_applying:
-				player_ref.set_meta("damage_boost", value)
-			else:
-				player_ref.remove_meta("damage_boost")
-			
+			player_ref.damage += value
+			player_ref.base_damage += value
+			print("💪 +", value, " damage permanent! Total: ", player_ref.damage)
+		
+		BuffType.HEALTH_BOOST:
+			player_ref.max_health += value
+			player_ref.current_health += value  # Heal aussi
+			print("❤️ +", value, " HP permanent! Total: ", player_ref.max_health)
+		
 		BuffType.SPEED_BOOST:
-			var boost = player_ref.base_speed * value * multiplier
-			player_ref.speed += boost
-			
-		BuffType.ARMOR_BOOST:
-			player_ref.set_meta("damage_reduction", value if is_applying else 0.0)
+			player_ref.speed += value
+			player_ref.base_speed += value
+			print("⚡ +", value, " speed permanent! Total: ", player_ref.speed)
 		
 		BuffType.FIRE_RATE_BOOST:
-			player_ref.set_meta("fire_rate_boost", value if is_applying else 0.0)
+			var current_boost = player_ref.get_meta("fire_rate_boost", 0.0)
+			player_ref.set_meta("fire_rate_boost", current_boost + value)
+			print("🔫 +", int(value*100), "% fire rate permanent!")
+		
+		BuffType.ARMOR_BOOST:
+			var current_armor = player_ref.get_meta("damage_reduction", 0.0)
+			player_ref.set_meta("damage_reduction", current_armor + value)
+			print("🛡️ +", int(value*100), "% armor permanent!")
 		
 		BuffType.LIFESTEAL:
-			player_ref.set_meta("lifesteal", value if is_applying else 0.0)
+			var current_lifesteal = player_ref.get_meta("lifesteal", 0.0)
+			player_ref.set_meta("lifesteal", current_lifesteal + value)
+			print("🧛 +", int(value*100), "% lifesteal permanent!")
 		
 		BuffType.MULTISHOT:
-			player_ref.set_meta("extra_projectiles", int(value) if is_applying else 0)
-		
-		BuffType.CHAIN_LIGHTNING:
-			player_ref.set_meta("chain_lightning_chance", value if is_applying else 0.0)
-		
-		BuffType.EXPLOSION_RADIUS:
-			player_ref.set_meta("explosion_radius_bonus", value if is_applying else 0.0)
+			var current_multishot = player_ref.get_meta("extra_projectiles", 0)
+			player_ref.set_meta("extra_projectiles", current_multishot + int(value))
+			print("🎯 +", int(value), " projectile permanent!")
 		
 		BuffType.PENETRATION:
-			player_ref.set_meta("penetration_bonus", int(value) if is_applying else 0)
-		
-		BuffType.POISON_DAMAGE:
-			player_ref.set_meta("poison_damage", value if is_applying else 0.0)
-		
-		BuffType.FIRE_DAMAGE:
-			player_ref.set_meta("fire_damage_percent", value if is_applying else 0.0)
-		
-		BuffType.ICE_SLOW:
-			player_ref.set_meta("ice_slow_power", value if is_applying else 0.0)
-		
-		BuffType.LIGHTNING_STUN:
-			player_ref.set_meta("lightning_stun_duration", value if is_applying else 0.0)
+			var current_penetration = player_ref.get_meta("penetration_bonus", 0)
+			player_ref.set_meta("penetration_bonus", current_penetration + int(value))
+			print("🏹 +", int(value), " penetration permanent!")
 
-func _update_buffs():
-	if not player_ref:
-		return
-	
-	# Update des buffs actifs
-	for i in range(active_buffs.size() - 1, -1, -1):
-		var buff = active_buffs[i]
-		buff.remaining_time -= 1.0
-		
-		# Buffs qui s'activent en continu
-		match buff.type:
-			BuffType.HEALTH_REGEN:
-				player_ref.heal(buff.value)
-		
-		# Supprimer les buffs expirés
-		if buff.remaining_time <= 0:
-			apply_buff_effect(buff.type, buff.value, false)
-			active_buffs.remove_at(i)
-			print("⏰ Buff expired: ", buff.name)
+# FONCTION MANQUANTE - Ajouter cette fonction pour corriger l'erreur
+func get_buff_sprite_path(buff_type: int) -> String:
+	# Retourne le chemin vers les sprites selon le type de buff
+	match buff_type:
+		BuffType.DAMAGE_BOOST:
+			return "res://assets/ui/damage_icon.png"
+		BuffType.HEALTH_BOOST:
+			return "res://assets/ui/health_icon.png"
+		BuffType.SPEED_BOOST:
+			return "res://assets/ui/speed_icon.png"
+		BuffType.FIRE_RATE_BOOST:
+			return "res://assets/ui/fire_rate_icon.png"
+		BuffType.ARMOR_BOOST:
+			return "res://assets/ui/armor_icon.png"
+		BuffType.LIFESTEAL:
+			return "res://assets/ui/lifesteal_icon.png"
+		BuffType.MULTISHOT:
+			return "res://assets/ui/multishot_icon.png"
+		BuffType.PENETRATION:
+			return "res://assets/ui/penetration_icon.png"
+		_:
+			return "res://assets/ui/default_buff_icon.png"
 
-func show_buff_notification(buff_data: Dictionary):
+func get_buff_color(buff_type: int) -> Color:
+	match buff_type:
+		BuffType.DAMAGE_BOOST: return Color.RED
+		BuffType.HEALTH_BOOST: return Color.GREEN
+		BuffType.SPEED_BOOST: return Color.YELLOW
+		BuffType.FIRE_RATE_BOOST: return Color.ORANGE
+		BuffType.ARMOR_BOOST: return Color.BLUE
+		BuffType.LIFESTEAL: return Color.PURPLE
+		BuffType.MULTISHOT: return Color.CYAN
+		BuffType.PENETRATION: return Color.MAGENTA
+		_: return Color.WHITE
+
+func show_buff_notification(buff_name: String, icon: String):
 	var notification = Label.new()
-	notification.text = buff_data.icon + " " + buff_data.name + " activé!"
-	notification.position = Vector2(400, 120)
-	notification.add_theme_font_size_override("font_size", 18)
-	notification.add_theme_color_override("font_color", get_rarity_color(buff_data.rarity))
+	notification.text = icon + " " + buff_name + " PERMANENT!"
+	notification.position = Vector2(400, 100)
+	notification.add_theme_font_size_override("font_size", 20)
+	notification.add_theme_color_override("font_color", Color.GOLD)
 	
 	get_tree().current_scene.add_child(notification)
 	
-	var tween = create_tween()
-	tween.tween_property(notification, "position:y", 80, 2.5)
-	tween.parallel().tween_property(notification, "modulate:a", 0.0, 2.5)
-	tween.tween_callback(func(): notification.queue_free())
+	# Timer pour faire disparaître
+	var timer = Timer.new()
+	notification.add_child(timer)
+	timer.wait_time = 3.0
+	timer.one_shot = true
+	timer.timeout.connect(notification.queue_free)
+	timer.start()
 
-func create_pickup_effect(position: Vector2, buff_data: Dictionary):
+func create_pickup_effect(position: Vector2):
 	var effect = Sprite2D.new()
 	get_tree().current_scene.add_child(effect)
 	
-	var effect_size = 32
-	var image = Image.create(effect_size, effect_size, false, Image.FORMAT_RGBA8)
-	var color = get_rarity_color(buff_data.rarity)
-	image.fill(color)
+	var image = Image.create(40, 40, false, Image.FORMAT_RGBA8)
+	image.fill(Color.GOLD)
 	
 	var texture = ImageTexture.new()
 	texture.set_image(image)
 	effect.texture = texture
 	effect.global_position = position
 	
-	var tween = create_tween()
-	tween.parallel().tween_property(effect, "scale", Vector2(3, 3), 0.6)
-	tween.parallel().tween_property(effect, "modulate:a", 0.0, 0.6)
-	tween.tween_callback(func(): effect.queue_free())
+	# Timer pour faire disparaître
+	var timer = Timer.new()
+	effect.add_child(timer)
+	timer.wait_time = 0.5
+	timer.one_shot = true
+	timer.timeout.connect(effect.queue_free)
+	timer.start()
 
-func get_rarity_color(rarity: String) -> Color:
-	match rarity:
-		"common": return Color.WHITE
-		"rare": return Color.CYAN
-		"epic": return Color.PURPLE
-		"legendary": return Color.GOLD
-		_: return Color.WHITE
-
-# Méthodes utilitaires
-func get_active_buffs() -> Array:
-	return active_buffs
-
-func has_buff(buff_type: int) -> bool:
-	for buff in active_buffs:
-		if buff.type == buff_type:
-			return true
-	return false
+# Force drop pour test
+func force_drop_buff(position: Vector2):
+	var buff_type = randi() % BuffType.size()
+	create_simple_buff_pickup(buff_type, position)
+	print("🧪 Force dropped buff at: ", position)

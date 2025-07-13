@@ -1,4 +1,4 @@
-# ForkArrowProjectile.gd - Version corrigée
+# ForkArrowProjectile.gd - Version corrigée et simplifiée
 extends Area2D
 class_name ForkArrowProjectile
 
@@ -105,132 +105,33 @@ func create_fork_arrows(impact_pos: Vector2):
 	print("🏹 Creating ", fork_count, " fork arrows!")
 	
 	for i in range(fork_count):
-		call_deferred("spawn_fork", i, impact_pos)
+		call_deferred("spawn_simple_fork", i, impact_pos)
 
-func spawn_fork(index: int, impact_pos: Vector2):
-	# Créer projectile simple
-	var fork = Area2D.new()
-	fork.name = "Fork_" + str(index)
+func spawn_simple_fork(index: int, impact_pos: Vector2):
+	# Créer un projectile simple basé sur BaseProjectile
+	var fork_scene = preload("res://scenes/projectiles/BasicProjectile.tscn")
+	var fork = fork_scene.instantiate()
 	
-	# Sprite
-	var fork_sprite = Sprite2D.new()
-	fork.add_child(fork_sprite)
-	
-	if sprite and sprite.texture:
-		fork_sprite.texture = sprite.texture
-		fork_sprite.scale = Vector2(0.7, 0.7)
-		fork_sprite.modulate = Color.LIGHT_BLUE
-	
-	# Collision
-	var fork_collision = CollisionShape2D.new()
-	var fork_shape = RectangleShape2D.new()
-	fork_shape.size = Vector2(10, 4)
-	fork_collision.shape = fork_shape
-	fork.add_child(fork_collision)
-	
-	# Position et direction
-	fork.global_position = impact_pos
-	var fork_direction = get_fork_direction(index, impact_pos)
-	
-	# Vérification de sécurité pour la direction
-	if fork_direction == Vector2.ZERO:
-		fork_direction = Vector2.RIGHT
-	
-	fork_sprite.rotation = fork_direction.angle()
-	
-	# Configuration
-	fork.collision_layer = collision_layer
-	fork.collision_mask = collision_mask
-	
-	# Ajouter au scene d'abord
+	# Ajouter à la scène
 	get_tree().current_scene.add_child(fork)
 	
-	# Puis définir les métadonnées
-	fork.set_meta("direction", fork_direction)
-	fork.set_meta("speed", speed * 0.8)
-	fork.set_meta("damage", damage * 0.6)
-	fork.set_meta("owner_type", owner_type)
-	fork.set_meta("lifetime", 2.0)
+	# Configuration de base
+	fork.set_owner_type(owner_type)
+	fork.setup(damage * 0.6, speed * 0.8, 2.0)  # Dégâts et vitesse réduits
 	
-	# Script simplifié
-	var script_code = """
-extends Area2D
-
-var direction: Vector2 = Vector2.RIGHT
-var speed: float = 300.0
-var damage: float = 10.0
-var owner_type: String = "player"
-var lifetime: float = 2.0
-var timer: float = 0.0
-
-func _ready():
-	# Attendre une frame pour que les métadonnées soient bien définies
-	await get_tree().process_frame
+	# Direction du fork
+	var fork_direction = get_fork_direction(index, impact_pos)
+	var target_pos = impact_pos + fork_direction * 300
 	
-	# Récupération des métadonnées
-	if has_meta('direction'):
-		direction = get_meta('direction')
-		print('🏹 Fork direction: ', direction)
+	# Lancer le fork
+	fork.launch(impact_pos, target_pos)
 	
-	if has_meta('speed'):
-		speed = get_meta('speed')
-		print('🏹 Fork speed: ', speed)
+	# Modifier l'apparence pour le distinguer
+	if fork.sprite:
+		fork.sprite.modulate = Color.LIGHT_BLUE
+		fork.sprite.scale = Vector2(0.7, 0.7)
 	
-	if has_meta('damage'):
-		damage = get_meta('damage')
-	
-	if has_meta('owner_type'):
-		owner_type = get_meta('owner_type')
-	
-	if has_meta('lifetime'):
-		lifetime = get_meta('lifetime')
-	
-	body_entered.connect(_on_hit)
-	area_entered.connect(_on_area_hit)
-	
-	print('🏹 Fork ', name, ' ready: dir=', direction, ' speed=', speed)
-
-func _physics_process(delta):
-	# Vérification de sécurité
-	if direction == Vector2.ZERO:
-		direction = Vector2.RIGHT
-		print('⚠️ Fork direction was zero, using RIGHT')
-	
-	global_position += direction * speed * delta
-	timer += delta
-	if timer >= lifetime:
-		queue_free()
-
-func _on_hit(body):
-	if not should_damage(body):
-		return
-	
-	if body.has_method('take_damage'):
-		body.take_damage(damage)
-		print('🏹 Fork hit ', body.name, ' for ', damage)
-	
-	queue_free()
-
-func _on_area_hit(area):
-	var parent = area.get_parent()
-	if parent:
-		_on_hit(parent)
-
-func should_damage(body) -> bool:
-	match owner_type:
-		'player':
-			return body.is_in_group('enemies')
-		'enemy':
-			return body.is_in_group('players')
-		_:
-			return true
-"""
-	
-	var script = GDScript.new()
-	script.source_code = script_code
-	fork.set_script(script)
-	
-	print("🏹 Fork ", index + 1, " spawned at ", impact_pos, " with direction ", fork_direction)
+	print("🏹 Fork ", index + 1, " spawned with direction ", fork_direction)
 
 func get_fork_direction(index: int, impact_pos: Vector2) -> Vector2:
 	# Chercher des ennemis proches
@@ -243,11 +144,17 @@ func get_fork_direction(index: int, impact_pos: Vector2) -> Vector2:
 		
 		var distance = impact_pos.distance_to(enemy.global_position)
 		if distance <= 200 and distance > 20:
-			nearby_enemies.append(enemy)
+			nearby_enemies.append({
+				"enemy": enemy,
+				"distance": distance
+			})
 	
-	# Si on a des cibles, viser la plus proche pour ce fork
+	# Trier par distance
+	nearby_enemies.sort_custom(func(a, b): return a.distance < b.distance)
+	
+	# Si on a des cibles, viser les plus proches
 	if index < nearby_enemies.size():
-		var target_direction = (nearby_enemies[index].global_position - impact_pos).normalized()
+		var target_direction = (nearby_enemies[index].enemy.global_position - impact_pos).normalized()
 		if target_direction != Vector2.ZERO:
 			return target_direction
 	

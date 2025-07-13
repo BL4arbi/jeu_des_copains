@@ -463,7 +463,7 @@ func _on_pickup(body):
 		
 		# NOUVEAU : Vérifier si l'inventaire est plein
 		if body.weapons.size() >= 5:
-			show_replacement_ui_simple(body, weapon_data)
+			pass #show_replacement_ui_simple(body, weapon_data)
 		else:
 			# Inventaire pas plein, ajouter directement
 			create_pickup_effect()

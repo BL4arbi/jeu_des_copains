@@ -1,6 +1,5 @@
 # PlayerProgressionSystem.gd - Version équilibrée avec progression réduite
 extends Node
-class_name PlayerProgressionSystem
 
 # STATS RÉDUITES - Progression plus lente
 var stats_per_kill: Dictionary = {

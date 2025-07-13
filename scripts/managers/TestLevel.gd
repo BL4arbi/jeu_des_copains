@@ -1,4 +1,4 @@
-# TestLevel.gd - Version corrigée avec connexion des systèmes
+# TestLevel.gd - Version corrigée avec création simple des systèmes
 extends Node2D
 
 # Références aux éléments de la scène
@@ -11,7 +11,6 @@ extends Node2D
 # Systèmes du jeu
 var drop_system: EnemyDropSystem
 var buff_system: BuffSystem
-var progression_system: PlayerProgressionSystem
 
 # Timer de nettoyage local
 var local_cleanup_timer: Timer
@@ -28,7 +27,7 @@ func _ready():
 	else:
 		print("ERROR: No Player found in scene!")
 	
-	# === CRÉER LES SYSTÈMES DE JEU ===
+	# === CRÉER LES SYSTÈMES DE JEU SIMPLEMENT ===
 	setup_game_systems()
 	
 	# Timer de nettoyage local
@@ -52,25 +51,18 @@ func setup_game_systems():
 	add_child(buff_system)
 	buff_system.add_to_group("buff_system")
 	
-	# === SYSTÈME DE PROGRESSION ===
-	progression_system = PlayerProgressionSystem.new()
-	progression_system.name = "ProgressionSystem"
-	add_child(progression_system)
-	progression_system.add_to_group("progression_system")
-	
 	print("✅ Drop system created")
 	print("⭐ Buff system created")
-	print("📈 Progression system created")
 
 func setup_signals():
 	# Connecter le signal de kill count
 	if GlobalData.has_signal("kill_count_updated"):
 		GlobalData.kill_count_updated.connect(_on_kill_count_updated)
 	
-	# CORRECTION : Connecter le signal enemy_killed pour les buffs
+	# Connecter le signal enemy_killed pour les systèmes
 	if GlobalData.has_signal("enemy_killed"):
 		GlobalData.enemy_killed.connect(_on_enemy_killed)
-		print("✅ Enemy killed signal connected for buffs")
+		print("✅ Enemy killed signal connected")
 	else:
 		print("❌ WARNING: enemy_killed signal not found in GlobalData!")
 	
@@ -78,7 +70,7 @@ func setup_signals():
 	if player and player.has_signal("health_changed"):
 		player.health_changed.connect(_on_player_health_changed)
 
-# NOUVELLE MÉTHODE : Relayer les morts d'ennemis aux systèmes
+# Relayer les morts d'ennemis aux systèmes
 func _on_enemy_killed(enemy_type: String, enemy_position: Vector2):
 	print("📢 Enemy killed relayed: ", enemy_type, " at ", enemy_position)
 	
@@ -86,7 +78,7 @@ func _on_enemy_killed(enemy_type: String, enemy_position: Vector2):
 	if drop_system and drop_system.has_method("_on_enemy_killed"):
 		drop_system._on_enemy_killed(enemy_type, enemy_position)
 	
-	# CORRECTION : Notifier le système de buffs
+	# Notifier le système de buffs
 	if buff_system and buff_system.has_method("_on_enemy_killed"):
 		buff_system._on_enemy_killed(enemy_type, enemy_position)
 		print("⭐ Buff system notified of enemy death")
@@ -188,7 +180,7 @@ func force_cleanup_all():
 		# Garder seulement les éléments essentiels
 		var is_essential = false
 		
-		if child.name in ["Player", "CanvasLayer", "TileMapLayer", "WeaponSpawner", "EnemySpawner", "DropSystem", "BuffSystem", "ProgressionSystem"]:
+		if child.name in ["Player", "CanvasLayer", "TileMapLayer", "WeaponSpawner", "EnemySpawner", "DropSystem", "BuffSystem"]:
 			is_essential = true
 		
 		if child.is_in_group("players") or child.is_in_group("essential"):
@@ -224,6 +216,12 @@ func _input(event):
 		GlobalData.add_kill()
 		update_hud()
 		print("Kill added! Total:", GlobalData.total_kills)
+	
+	# Test: B pour forcer un buff (pour debug)
+	if Input.is_key_pressed(KEY_B) and Input.is_action_just_pressed("ui_accept"):
+		if buff_system and player:
+			buff_system.force_drop_buff(player.global_position)
+			print("🧪 Force dropped buff for testing")
 	
 	# Test: Echap pour retourner à la sélection
 	if Input.is_action_pressed("ui_cancel"):

@@ -6,7 +6,7 @@ class_name ChakramProjectile
 var return_to_player: bool = false
 var player_target: Node2D = null
 var bounce_targets: Array = []
-var bounce_range: float = 150.0
+#var bounce_range: float = 150.0
 var return_speed_multiplier: float = 1.5
 
 # Variables de rotation

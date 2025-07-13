@@ -78,7 +78,7 @@ var weapon_database: Dictionary = {
 		"damage": 18.0, "speed": 350.0, "fire_rate": 0.7,
 		"scene_path": "res://scenes/projectiles/BasicProjectile.tscn",
 		"description": "Suit automatiquement les ennemis",
-		"special_properties": {"homing": 3.0}
+		"special_properties": {"homing": 5.0}
 	},
 	"Chakram": {
 		"damage": 20.0, "speed": 300.0, "fire_rate": 2.0,

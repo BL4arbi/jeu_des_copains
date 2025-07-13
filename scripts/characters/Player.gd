@@ -1,4 +1,4 @@
-# Player.gd - Version corrigée avec multishot et effets de statut
+# Player.gd - Version complète corrigée sans tweens
 extends BaseCharacter
 class_name Player
 
@@ -6,6 +6,7 @@ var weapons: Array[ProjectileData] = []
 var current_weapon: int = 0
 var fire_timer: float = 0.0 
 signal weapon_replacement_requested(new_weapon: ProjectileData)
+
 # Variables de respawn
 var is_dead: bool = false
 var respawn_time: float = 3.0
@@ -142,6 +143,22 @@ func fire_projectile(weapon: ProjectileData, target_pos: Vector2):
 	# Configuration de base
 	projectile.set_owner_type("player")
 	
+	# === CORRECTION HOMING : Configuration spéciale pour "Tir Chercheur" ===
+	if weapon.projectile_name == "Tir Chercheur":
+		projectile.set_projectile_type("homing")
+		print("🎯 Configured homing projectile!")
+	
+	# Configuration selon les propriétés spéciales
+	if weapon.special_properties.has("homing"):
+		projectile.set_projectile_type("homing")
+		projectile.homing_strength = weapon.special_properties.homing
+		print("🎯 Homing configured with strength: ", projectile.homing_strength)
+	
+	if weapon.special_properties.has("piercing"):
+		projectile.pierces_remaining = weapon.special_properties.piercing
+		projectile.max_pierces = weapon.special_properties.piercing
+		print("🏹 Piercing configured: ", projectile.pierces_remaining)
+	
 	# === APPLIQUER LES BUFFS AU PROJECTILE ===
 	var final_damage = get_effective_damage(weapon.damage)
 	var final_speed = weapon.speed
@@ -150,9 +167,9 @@ func fire_projectile(weapon: ProjectileData, target_pos: Vector2):
 	# Penetration
 	var penetration = get_meta("penetration_bonus", 0)
 	if penetration > 0:
-		projectile.pierces_remaining = penetration
-		projectile.max_pierces = penetration
-		print("🏹 Projectile with ", penetration, " penetration")
+		projectile.pierces_remaining = max(projectile.pierces_remaining, penetration)
+		projectile.max_pierces = max(projectile.max_pierces, penetration)
+		print("🏹 Projectile with penetration: ", penetration)
 	
 	# Effets de statut selon les buffs actifs
 	apply_status_effects_to_projectile(projectile)
@@ -219,9 +236,115 @@ func fire_lightning_special():
 	lightning.global_position = global_position
 
 func handle_weapon_switch():
+	# Changement d'arme avec les touches 1-5
+	for i in range(5):
+		if Input.is_action_just_pressed("weapon_" + str(i + 1)) and weapons.size() > i:
+			current_weapon = i
+			print("Switched to: ", weapons[current_weapon].projectile_name)
+	
+	# Changement d'arme avec flèches
 	if Input.is_action_just_pressed("ui_up") and weapons.size() > 1:
 		current_weapon = (current_weapon + 1) % weapons.size()
 		print("Switched to: ", weapons[current_weapon].projectile_name)
+	
+	# === DROP D'ARME AVEC ESPACE ===
+	if Input.is_action_just_pressed("ui_accept") and Input.is_key_pressed(KEY_SPACE):
+		drop_current_weapon()
+
+# === FONCTION : Drop de l'arme actuelle ===
+func drop_current_weapon():
+	if weapons.size() <= 1:
+		print("❌ Cannot drop weapon - need at least one weapon!")
+		return
+	
+	if current_weapon < 0 or current_weapon >= weapons.size():
+		print("❌ Invalid weapon index!")
+		return
+	
+	var weapon_to_drop = weapons[current_weapon]
+	print("🗑️ Dropping weapon: ", weapon_to_drop.projectile_name)
+	
+	# Créer le pickup de l'arme
+	create_weapon_pickup_from_data(weapon_to_drop)
+	
+	# Supprimer l'arme de l'inventaire
+	weapons.remove_at(current_weapon)
+	
+	# Ajuster l'index de l'arme actuelle
+	if current_weapon >= weapons.size():
+		current_weapon = weapons.size() - 1
+	
+	# Effet visuel de drop simple (sans tween)
+	create_weapon_drop_effect()
+	
+	print("✅ Weapon dropped! Current weapon: ", weapons[current_weapon].projectile_name)
+
+func create_weapon_pickup_from_data(weapon_data: ProjectileData):
+	# Créer un pickup de l'arme droppée
+	var pickup_scene = preload("res://scenes/ui/weapon_pickup.tscn")
+	var pickup = pickup_scene.instantiate()
+	
+	# Configuration du pickup avec les données de l'arme
+	pickup.weapon_name = weapon_data.projectile_name
+	pickup.damage = weapon_data.damage
+	pickup.speed = weapon_data.speed
+	pickup.fire_rate = weapon_data.fire_rate
+	pickup.projectile_scene_path = weapon_data.projectile_scene_path
+	pickup.weapon_description = weapon_data.description
+	
+	# Déterminer la rareté
+	pickup.weapon_rarity = determine_weapon_rarity(weapon_data.projectile_name)
+	
+	# Copier les propriétés spéciales si elles existent
+	if weapon_data.special_properties:
+		pickup.special_properties = weapon_data.special_properties.duplicate()
+	
+	# Position de drop (devant le joueur)
+	var drop_direction = last_direction if last_direction != Vector2.ZERO else Vector2.RIGHT
+	var drop_position = global_position + drop_direction * 80
+	pickup.global_position = drop_position
+	
+	# Ajouter à la scène
+	get_tree().current_scene.add_child(pickup)
+	
+	print("💎 Weapon pickup created at: ", drop_position)
+
+func determine_weapon_rarity(weapon_name: String) -> String:
+	match weapon_name:
+		"Tir Basique", "Tir Rapide", "Canon Lourd":
+			return "common"
+		"Tir Perçant", "Flèche Fork", "Tir Chercheur":
+			return "rare"
+		"Chakram", "Foudre", "Pluie de Météores":
+			return "epic"
+		"Laser Rotatif", "Nova Stellaire":
+			return "legendary"
+		"Apocalypse", "Singularité":
+			return "mythic"
+		_:
+			return "common"
+
+func create_weapon_drop_effect():
+	# Effet visuel simple sans tween
+	var effect = Sprite2D.new()
+	get_tree().current_scene.add_child(effect)
+	
+	var effect_size = 32
+	var image = Image.create(effect_size, effect_size, false, Image.FORMAT_RGBA8)
+	image.fill(Color(0.8, 0.8, 1.0, 0.7))
+	
+	var texture = ImageTexture.new()
+	texture.set_image(image)
+	effect.texture = texture
+	effect.global_position = global_position
+	
+	# Timer simple pour supprimer l'effet
+	var timer = Timer.new()
+	effect.add_child(timer)
+	timer.wait_time = 1.0
+	timer.one_shot = true
+	timer.timeout.connect(func(): effect.queue_free())
+	timer.start()
 
 func pickup_weapon(weapon_data: ProjectileData) -> bool:
 	# Vérifier si on a déjà cette arme
@@ -271,10 +394,13 @@ func show_lifesteal_effect(heal_amount: float):
 	
 	get_tree().current_scene.add_child(heal_label)
 	
-	var tween = create_tween()
-	tween.parallel().tween_property(heal_label, "position:y", heal_label.position.y - 50, 1.0)
-	tween.parallel().tween_property(heal_label, "modulate:a", 0.0, 1.0)
-	tween.tween_callback(func(): heal_label.queue_free())
+	# Timer simple pour supprimer le label
+	var timer = Timer.new()
+	heal_label.add_child(timer)
+	timer.wait_time = 2.0
+	timer.one_shot = true
+	timer.timeout.connect(func(): heal_label.queue_free())
+	timer.start()
 
 # OVERRIDE die pour le respawn
 func die():
@@ -328,14 +454,6 @@ func _on_respawn():
 	)
 	invul_timer.start()
 	
-	# Clignotement
-	var blink_tween = create_tween()
-	blink_tween.set_loops()
-	blink_tween.tween_property(self, "modulate:a", 0.5, 0.2)
-	blink_tween.tween_property(self, "modulate:a", 1.0, 0.2)
-	
-	invul_timer.timeout.connect(func(): blink_tween.kill())
-	
 	hide_death_message()
 
 func create_death_effect():
@@ -351,13 +469,13 @@ func create_death_effect():
 		particle.texture = texture
 		particle.global_position = global_position
 		
-		var direction = Vector2(cos(i * PI * 2 / 5), sin(i * PI * 2 / 5))
-		var end_pos = global_position + direction * 50
-		
-		var tween = create_tween()
-		tween.parallel().tween_property(particle, "global_position", end_pos, 0.5)
-		tween.parallel().tween_property(particle, "modulate:a", 0.0, 0.5)
-		tween.tween_callback(func(): particle.queue_free())
+		# Timer simple pour supprimer les particules
+		var timer = Timer.new()
+		particle.add_child(timer)
+		timer.wait_time = 1.0
+		timer.one_shot = true
+		timer.timeout.connect(func(): particle.queue_free())
+		timer.start()
 
 var death_message: Label = null
 
