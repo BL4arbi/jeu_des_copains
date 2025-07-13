@@ -9,7 +9,7 @@ extends Node2D
 @onready var health_bar: ProgressBar = get_node_or_null("CanvasLayer/HUD/HealthBar")
 @onready var kill_counter: Label = get_node_or_null("CanvasLayer/HUD/KillCounter")
 @onready var level_info: Label = get_node_or_null("CanvasLayer/HUD/LevelInfo")
-
+#test
 func _ready():
 	print("=== TestLevel Ready ===")
 	print("GlobalData player_stats: ", GlobalData.player_stats)
@@ -21,7 +21,12 @@ func _ready():
 		update_player_sprite()
 	else:
 		print("ERROR: No Player found in scene!")
+	var drop_system = EnemyDropSystem.new()
+	drop_system.name = "DropSystem"
+	add_child(drop_system)
+	drop_system.add_to_group("drop_system")
 	
+	print("Drop system created and added to scene")
 	update_hud()
 
 func center_player():

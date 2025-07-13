@@ -85,6 +85,10 @@ clear={
 
 [layer_names]
 
+2d_render/layer_1="Players"
+2d_render/layer_2="Enemies"
+2d_render/layer_3="Player_Projectiles"
+2d_render/layer_4="Enemy_Projectiles"
 2d_physics/layer_1="player"
 2d_physics/layer_5="terrain/mur"
 

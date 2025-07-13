@@ -9,6 +9,7 @@ var characters_data: Array = []
 
 # Signaux
 signal kill_count_updated(new_count: int)
+signal enemy_killed(enemy_type: String, position: Vector2)
 
 func _ready():
 	load_characters_data()
