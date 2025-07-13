@@ -20,6 +20,7 @@ config/icon="res://assets/SPRITES/weapon/icon.svg"
 GlobalData="*res://autoload/global_data.gd"
 SceneManager="*res://autoload/SceneManager.gd"
 WeaponCleanupManager="*res://autoload/weapon_cleanup_manager.gd"
+DifficultyManager="*res://autoload/difficulty_manager.gd"
 
 [input]
 

@@ -21,7 +21,7 @@ var weapon_sprites: Dictionary = {
 	"Tir Rapide": "res://assets/SPRITES/weapon/BAGUETTE_MAGIQUE.png", 
 	"Canon Lourd": "res://assets/SPRITES/weapon/GRENADE_TOP_DOWN.png",
 	"Tir Perçant": "res://assets/SPRITES/weapon/Pickaxe_TOP_DOWN.png",
-	"Flèche Fork": "res://assets/SPRITES/weapon/AttackSprite01.png",
+	"Flèche Fork": "res://assets/SPRITES/projectiles/SplittingArrow.png",
 	"Tir Chercheur": "res://assets/SPRITES/weapon/BAGUETTE_MAGIQUE.png",
 	"Chakram": "res://assets/SPRITES/weapon/Collectibles_TOP_DOWN.png",
 	"Foudre": "res://assets/SPRITES/weapon/BAGUETTE_MAGIQUE.png",

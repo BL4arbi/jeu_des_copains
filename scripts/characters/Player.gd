@@ -1,4 +1,4 @@
-# Player.gd - Corrections pour Chakram et projectiles spéciaux
+# Player.gd - Version complète et simple
 extends BaseCharacter
 class_name Player
 
@@ -6,7 +6,12 @@ var weapons: Array[ProjectileData] = []
 var current_weapon: int = 0
 var fire_timer: float = 0.0 
 
-# Données du personnage pour les animations
+# Variables de respawn
+var is_dead: bool = false
+var respawn_time: float = 3.0
+var is_invulnerable: bool = false
+
+# Données du personnage
 var character_data: Dictionary = {}
 
 func _ready():
@@ -91,6 +96,9 @@ func setup_mage_animations():
 		animation_player.speed_scale = 1.0
 
 func _physics_process(delta):
+	if is_dead:
+		return
+		
 	handle_movement()
 	handle_shooting(delta)
 	handle_weapon_switch()
@@ -108,7 +116,7 @@ func handle_movement():
 	if Input.is_action_pressed("move_up"):
 		input_direction.y -= 1
 	
-	# Gestion directe du changement d'arme
+	# Changement d'arme direct
 	if Input.is_action_pressed("weapon_1") and weapons.size() > 0:
 		current_weapon = 0
 	if Input.is_action_pressed("weapon_2") and weapons.size() > 1:
@@ -140,18 +148,27 @@ func fire_projectile():
 	var weapon = weapons[current_weapon]
 	var mouse_pos = get_global_mouse_position()
 	
-	# CORRECTION : Gestion spéciale pour certains projectiles
-	match weapon.projectile_name:
-		"Chakram":
-			fire_chakram_projectile(weapon, mouse_pos)
-		"Tir Chercheur":
-			fire_homing_projectile(weapon, mouse_pos)
-		"Foudre":
-			fire_lightning_projectile(weapon, mouse_pos)
-		"Pluie de Météores":
-			fire_meteor_projectile(weapon, mouse_pos)
-		_:
-			fire_normal_projectile(weapon, mouse_pos)
+	# SIMPLE : Selon le nom de l'arme
+	if weapon.projectile_name == "Foudre":
+		fire_lightning()
+	else:
+		fire_normal_projectile(weapon, mouse_pos)
+
+func fire_lightning():
+	print("⚡ FIRING LIGHTNING!")
+	
+	# Créer la foudre directement
+	var lightning_scene = load("res://scenes/projectiles/Lightning_projectile.tscn")
+	var lightning = lightning_scene.instantiate()
+	
+	get_tree().current_scene.add_child(lightning)
+	
+	# Configuration simple
+	lightning.owner_type = "player"
+	lightning.damage = weapons[current_weapon].damage
+	lightning.global_position = global_position
+	
+	print("⚡ Lightning created at player position: ", global_position)
 
 func fire_normal_projectile(weapon: ProjectileData, target_pos: Vector2):
 	if not ResourceLoader.exists(weapon.projectile_scene_path):
@@ -168,104 +185,6 @@ func fire_normal_projectile(weapon: ProjectileData, target_pos: Vector2):
 	
 	var spawn_offset = (target_pos - global_position).normalized() * 30
 	projectile.launch(global_position + spawn_offset, target_pos)
-
-func fire_chakram_projectile(weapon: ProjectileData, target_pos: Vector2):
-	# CORRECTION : Utiliser ChakramProjectile si disponible, sinon BasicProjectile
-	var projectile_path = "res://scenes/projectiles/ChakramProjectile.tscn"
-	if not ResourceLoader.exists(projectile_path):
-		projectile_path = "res://scenes/projectiles/BasicProjectile.tscn"
-	
-	var projectile_scene = load(projectile_path)
-	var projectile = projectile_scene.instantiate()
-	
-	get_tree().current_scene.add_child(projectile)
-	
-	projectile.set_owner_type("player")
-	projectile.setup(weapon.damage, weapon.speed, weapon.lifetime)
-	
-	# Propriétés spéciales du Chakram
-	if projectile.has_method("set_projectile_type"):
-		projectile.set_projectile_type("bounce")
-		projectile.max_bounces = 3
-		projectile.bounces_remaining = 3
-	
-	var spawn_offset = (target_pos - global_position).normalized() * 30
-	projectile.launch(global_position + spawn_offset, target_pos)
-	
-	print("🪃 Chakram fired!")
-
-func fire_homing_projectile(weapon: ProjectileData, target_pos: Vector2):
-	var projectile_scene = load("res://scenes/projectiles/BasicProjectile.tscn")
-	var projectile = projectile_scene.instantiate()
-	
-	get_tree().current_scene.add_child(projectile)
-	
-	projectile.set_owner_type("player")
-	projectile.setup(weapon.damage, weapon.speed, weapon.lifetime)
-	
-	# CORRECTION : Configurer le homing
-	if projectile.has_method("set_projectile_type"):
-		projectile.set_projectile_type("homing")
-		projectile.homing_strength = 3.0
-	
-	var spawn_offset = (target_pos - global_position).normalized() * 30
-	projectile.launch(global_position + spawn_offset, target_pos)
-	
-	print("🎯 Homing projectile fired!")
-
-func fire_lightning_projectile(weapon: ProjectileData, target_pos: Vector2):
-	var projectile_path = "res://scenes/projectiles/Lightning_projectile.tscn"
-	if not ResourceLoader.exists(projectile_path):
-		fire_normal_projectile(weapon, target_pos)
-		return
-	
-	var projectile_scene = load(projectile_path)
-	var projectile = projectile_scene.instantiate()
-	
-	get_tree().current_scene.add_child(projectile)
-	
-	# CORRECTION : Gestion sécurisée
-	if projectile.has_method("set_owner_type"):
-		projectile.set_owner_type("player")
-	else:
-		projectile.owner_type = "player"
-	
-	if projectile.has_method("setup"):
-		projectile.setup(weapon.damage, weapon.speed, weapon.lifetime)
-	
-	# CORRECTION : Position du joueur au lieu de la souris
-	# Le Lightning cherchera automatiquement les ennemis autour du joueur
-	projectile.global_position = global_position
-	
-	# OPTIONNEL : Configurer le nombre de cibles selon l'arme
-	if projectile.has_method("set_target_count"):
-		var target_count = 3  # Par défaut
-		# Tu peux varier selon l'arme ou les upgrades
-		if weapon.projectile_name == "Foudre":
-			target_count = 3
-		elif weapon.projectile_name == "Foudre Améliorée":
-			target_count = 5
-		
-		projectile.set_target_count(target_count)
-	
-	
-
-func fire_meteor_projectile(weapon: ProjectileData, target_pos: Vector2):
-	var projectile_path = "res://scenes/projectiles/Meteor_projectile.tscn"
-	if not ResourceLoader.exists(projectile_path):
-		fire_normal_projectile(weapon, target_pos)
-		return
-	
-	var projectile_scene = load(projectile_path)
-	var projectile = projectile_scene.instantiate()
-	
-	get_tree().current_scene.add_child(projectile)
-	
-	projectile.set_owner_type("player")
-	projectile.setup(weapon.damage, weapon.speed, weapon.lifetime)
-	projectile.global_position = target_pos
-	
-	print("☄️ Meteor projectile fired!")
 
 func handle_weapon_switch():
 	if Input.is_action_just_pressed("ui_up") and weapons.size() > 1:
@@ -288,8 +207,121 @@ func pickup_weapon(weapon_data: ProjectileData) -> bool:
 	print("✅ Added weapon: ", weapon_data.projectile_name)
 	return true
 
+# OVERRIDE take_damage pour gérer l'invulnérabilité
+func take_damage(amount: float):
+	if is_dead or is_invulnerable:
+		print("🛡️ Damage blocked (dead or invulnerable)")
+		return
+	
+	super.take_damage(amount)
+
+# OVERRIDE die pour le respawn
+func die():
+	if is_dead:
+		return
+	
+	is_dead = true
+	print("💀 Player died! Respawning in ", respawn_time, " seconds...")
+	
+	# Arrêter les mouvements
+	velocity = Vector2.ZERO
+	visible = false
+	collision_layer = 0
+	
+	# Effet de mort simple
+	create_death_effect()
+	
+	# Timer de respawn
+	var respawn_timer = Timer.new()
+	add_child(respawn_timer)
+	respawn_timer.wait_time = respawn_time
+	respawn_timer.one_shot = true
+	respawn_timer.timeout.connect(_on_respawn)
+	respawn_timer.start()
+	
+	# UI de respawn simple
+	show_death_message()
+
+func _on_respawn():
+	print("✨ Player respawning!")
+	
+	# Réinitialiser
+	is_dead = false
+	visible = true
+	collision_layer = 1
+	
+	# Vie complète
+	current_health = max_health
+	health_changed.emit(current_health, max_health)
+	
+	# Position sûre
+	global_position = get_viewport().get_visible_rect().size / 2
+	
+	# Invulnérabilité temporaire
+	is_invulnerable = true
+	var invul_timer = Timer.new()
+	add_child(invul_timer)
+	invul_timer.wait_time = 2.0
+	invul_timer.one_shot = true
+	invul_timer.timeout.connect(func(): 
+		is_invulnerable = false
+		modulate = Color.WHITE
+		invul_timer.queue_free()
+	)
+	invul_timer.start()
+	
+	# Clignotement
+	var blink_tween = create_tween()
+	blink_tween.set_loops()
+	blink_tween.tween_property(self, "modulate:a", 0.5, 0.2)
+	blink_tween.tween_property(self, "modulate:a", 1.0, 0.2)
+	
+	invul_timer.timeout.connect(func(): blink_tween.kill())
+	
+	hide_death_message()
+
+func create_death_effect():
+	# Effet simple de mort
+	for i in range(5):
+		var particle = Sprite2D.new()
+		get_tree().current_scene.add_child(particle)
+		
+		var image = Image.create(8, 8, false, Image.FORMAT_RGB8)
+		image.fill(Color.RED)
+		
+		var texture = ImageTexture.new()
+		texture.set_image(image)
+		particle.texture = texture
+		particle.global_position = global_position
+		
+		var direction = Vector2(cos(i * PI * 2 / 5), sin(i * PI * 2 / 5))
+		var end_pos = global_position + direction * 50
+		
+		var tween = create_tween()
+		tween.parallel().tween_property(particle, "global_position", end_pos, 0.5)
+		tween.parallel().tween_property(particle, "modulate:a", 0.0, 0.5)
+		tween.tween_callback(func(): particle.queue_free())
+
+var death_message: Label = null
+
+func show_death_message():
+	death_message = Label.new()
+	death_message.text = "💀 MORT! Respawn dans " + str(int(respawn_time)) + "s..."
+	death_message.position = Vector2(400, 300)
+	death_message.add_theme_font_size_override("font_size", 24)
+	death_message.add_theme_color_override("font_color", Color.RED)
+	get_tree().current_scene.add_child(death_message)
+
+func hide_death_message():
+	if death_message and is_instance_valid(death_message):
+		death_message.queue_free()
+		death_message = null
+
 # Méthodes pour les effets de statut (garder existantes)
 func apply_status_effect(effect_type: String, duration: float, power: float):
+	if is_dead:
+		return
+		
 	print("Player affected by: ", effect_type, " for ", duration, "s")
 	
 	match effect_type:
@@ -354,4 +386,4 @@ func apply_freeze_effect(duration: float):
 		timer.queue_free()
 		print("Freeze effect ended")
 	)
-	timer.start() 
+	timer.start()
