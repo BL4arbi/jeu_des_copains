@@ -1,8 +1,8 @@
 [gd_scene load_steps=9 format=3 uid="uid://dlviv7xfor6uq"]
 
-[ext_resource type="Script" uid="uid://c2cymgyhgge18" path="res://scripts/enemies/BaseEnemy.gd" id="1_h6et2"]
+[ext_resource type="Script" uid="uid://c2cymgyhgge18" path="res://SCRIPTS/enemies/BaseEnemy.gd" id="1_h6et2"]
 [ext_resource type="Texture2D" uid="uid://bjior41lx3qa7" path="res://assets/SPRITES/enemies/vieux_papy_4.png" id="1_ycr4e"]
-[ext_resource type="Script" uid="uid://cowdw5bg5gcng" path="res://scenes/characters/enemies/health_bar.gd" id="3_rt50t"]
+[ext_resource type="Script" uid="uid://cowdw5bg5gcng" path="res://SCENES/characters/enemies/health_bar.gd" id="3_rt50t"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_h6et2"]
 size = Vector2(66, 21)

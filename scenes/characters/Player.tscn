@@ -1,8 +1,8 @@
 [gd_scene load_steps=8 format=3 uid="uid://b27ohpasoalgu"]
 
-[ext_resource type="Script" uid="uid://c8km822ksxlbb" path="res://scripts/characters/Player.gd" id="1_gin2a"]
+[ext_resource type="Script" uid="uid://c8km822ksxlbb" path="res://SCRIPTS/characters/Player.gd" id="1_gin2a"]
 [ext_resource type="Texture2D" uid="uid://bfvfmij2c3cac" path="res://assets/tiles/TOP_DOWN_PLAYER_NEW.png" id="2_gin2a"]
-[ext_resource type="Script" uid="uid://bsp7rv0k7crk5" path="res://scenes/characters/health_bar.gd" id="3_7n8ao"]
+[ext_resource type="Script" uid="uid://bsp7rv0k7crk5" path="res://SCENES/characters/health_bar.gd" id="3_7n8ao"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_mdl7e"]
 radius = 16.0312
