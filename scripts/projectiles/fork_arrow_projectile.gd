@@ -1,179 +1,96 @@
-# ForkArrowProjectile.gd - Version corrigée sans erreurs
-extends BaseProjectile
+# ForkArrowProjectile.gd - Version corrigée
+extends Area2D
 class_name ForkArrowProjectile
 
-var fork_count: int = 3
-var fork_range: float = 200.0
-var fork_damage_ratio: float = 0.6
-var fork_speed_ratio: float = 0.8
-var spread_angle: float = PI / 3
-var damage_multiplier: float = 1.0
-var range_multiplier: float = 1.0
+# Variables principales
+var damage: float = 15.0
+var speed: float = 400.0
+var lifetime: float = 5.0
+var direction: Vector2 = Vector2.RIGHT
+var owner_type: String = "player"
 
+# Variables fork
+var fork_count: int = 3
 var has_forked: bool = false
-# targets_hit est déjà défini dans BaseProjectile, on l'utilise directement
+var targets_hit: Array = []
+var lifetime_timer: float = 0.0
+
+@onready var sprite: Sprite2D = $Sprite2D
+@onready var collision_shape: CollisionShape2D = $CollisionShape2D
 
 func _ready():
-	super._ready()
-	setup_fork_arrow()
-
-func setup_fork_arrow():
-	projectile_type = "fork"
+	body_entered.connect(_on_body_entered)
+	area_entered.connect(_on_area_entered)
+	
+	collision_layer = 4 if owner_type == "player" else 8
+	collision_mask = 2 if owner_type == "player" else 1
+	
 	if sprite:
 		sprite.modulate = Color.PURPLE
-		if direction != Vector2.ZERO:
-			sprite.rotation = direction.angle()
+	
+	print("🏹 Fork Arrow ready!")
+
+func setup(projectile_damage: float, projectile_speed: float, projectile_lifetime: float):
+	damage = projectile_damage
+	speed = projectile_speed
+	lifetime = projectile_lifetime
+
+func set_owner_type(type: String):
+	owner_type = type
+	collision_layer = 4 if owner_type == "player" else 8
+	collision_mask = 2 if owner_type == "player" else 1
+
+func launch(start_pos: Vector2, target_pos: Vector2):
+	global_position = start_pos
+	direction = (target_pos - start_pos).normalized()
+	
+	# Vérification de sécurité
+	if direction == Vector2.ZERO:
+		direction = Vector2.RIGHT
+	
+	if sprite:
+		sprite.rotation = direction.angle()
 
 func _physics_process(delta):
-	# Mouvement de base
+	# Vérification de sécurité
+	if direction == Vector2.ZERO:
+		direction = Vector2.RIGHT
+	
 	global_position += direction * speed * delta
 	
-	# Rotation du sprite
-	if sprite and direction != Vector2.ZERO:
-		sprite.rotation = direction.angle()
-	
-	# Timer de vie
 	lifetime_timer += delta
 	if lifetime_timer >= lifetime:
-		on_lifetime_end()
+		if not has_forked:
+			create_fork_arrows(global_position)
+		queue_free()
 
-func _on_hit_target(body):
-	print("🏹 Fork Arrow hit: ", body.name)
+func _on_body_entered(body):
+	print("🏹 Fork hit body: ", body.name)
 	
 	if not should_damage_target(body):
 		return
 	
-	# Éviter de toucher la même cible plusieurs fois
 	if body in targets_hit:
 		return
 	
 	targets_hit.append(body)
 	
-	# FORK AVANT LES DÉGÂTS pour garantir qu'elle se déclenche
+	# Fork AVANT de faire des dégâts
 	if not has_forked:
-		create_fork_projectiles(body.global_position)
 		has_forked = true
-		print("🏹 Fork triggered!")
+		create_fork_arrows(body.global_position)
 	
-	# Infliger les dégâts
+	# Dégâts
 	if body.has_method("take_damage"):
-		var initial_damage = damage * damage_multiplier
-		body.take_damage(initial_damage)
-		print("✅ Fork Arrow damage: ", initial_damage)
+		body.take_damage(damage)
+		print("✅ Fork damage: ", damage)
 	
-	# Appliquer effet de statut si disponible
-	if has_status_effect and body.has_method("apply_status_effect"):
-		body.apply_status_effect(status_type, status_duration, status_power)
-	
-	# Détruire le projectile principal après fork et dégâts
 	queue_free()
 
-func create_fork_projectiles(impact_position: Vector2):
-	print("🏹 Creating ", fork_count, " fork arrows!")
-	
-	var nearby_targets = find_nearby_targets(impact_position)
-	
-	for i in range(fork_count):
-		call_deferred("spawn_fork_projectile", i, impact_position, nearby_targets)
-
-func spawn_fork_projectile(fork_index: int, impact_position: Vector2, nearby_targets: Array):
-	# Vérifier que la scène existe toujours
-	if not get_tree() or not get_tree().current_scene:
-		return
-	
-	# Utiliser BasicProjectile pour éviter les problèmes
-	var basic_projectile_path = "res://scenes/projectiles/BasicProjectile.tscn"
-	if not ResourceLoader.exists(basic_projectile_path):
-		print("❌ BasicProjectile scene not found!")
-		return
-	
-	var fork_scene = load(basic_projectile_path)
-	var fork = fork_scene.instantiate()
-	
-	if not fork:
-		print("❌ Failed to instantiate fork projectile!")
-		return
-	
-	get_tree().current_scene.add_child(fork)
-	
-	# Position et direction
-	fork.global_position = impact_position
-	var fork_direction = calculate_fork_direction(fork_index, nearby_targets, impact_position)
-	fork.direction = fork_direction
-	
-	# Configuration de la fork
-	var fork_damage = damage * fork_damage_ratio * damage_multiplier
-	var fork_speed = speed * fork_speed_ratio
-	var fork_lifetime = lifetime * 0.6  # Plus courte
-	
-	fork.setup(fork_damage, fork_speed, fork_lifetime)
-	fork.set_owner_type(owner_type)
-	
-	# ⚠️ TRÈS IMPORTANT : Empêcher le re-fork !
-	fork.projectile_type = "basic"  # PAS "fork" !
-	
-	# ⚠️ DOUBLEMENT IMPORTANT : Supprimer la méthode _on_hit_target si elle existe
-	if fork.has_signal("body_entered"):
-		# Déconnecter tous les signaux existants
-		for connection in fork.body_entered.get_connections():
-			fork.body_entered.disconnect(connection.callable)
-		
-		# Reconnecter seulement au hit normal de BaseProjectile
-		fork.body_entered.connect(fork._on_hit_target)
-	
-	# Apparence distincte pour les forks
-	if fork.sprite:
-		fork.sprite.modulate = Color.LIGHT_BLUE
-		fork.sprite.scale = Vector2(0.7, 0.7)
-		if fork_direction != Vector2.ZERO:
-			fork.sprite.rotation = fork_direction.angle()
-	
-	# Effet de statut hérité
-	if has_status_effect and fork.has_method("add_status_effect"):
-		fork.add_status_effect(status_type, status_duration * 0.7, status_power * 0.8)
-	
-	print("🏹 Fork ", fork_index+1, " spawned successfully (type: ", fork.projectile_type, ")")
-
-func find_nearby_targets(impact_position: Vector2) -> Array:
-	var target_group = "enemies" if owner_type == "player" else "players"
-	var potential_targets = get_tree().get_nodes_in_group(target_group)
-	var nearby_targets = []
-	
-	var effective_range = fork_range * range_multiplier
-	
-	for target in potential_targets:
-		if not is_instance_valid(target):
-			continue
-			
-		var distance = impact_position.distance_to(target.global_position)
-		if distance <= effective_range and distance > 20:  # Pas trop proche
-			nearby_targets.append({
-				"target": target,
-				"distance": distance,
-				"position": target.global_position
-			})
-	
-	# Trier par distance (plus proches en premier)
-	nearby_targets.sort_custom(func(a, b): return a.distance < b.distance)
-	
-	print("🏹 Found ", nearby_targets.size(), " nearby targets for fork")
-	return nearby_targets
-
-func calculate_fork_direction(fork_index: int, nearby_targets: Array, impact_position: Vector2) -> Vector2:
-	# Si on a des cibles proches, viser les premières
-	if fork_index < nearby_targets.size():
-		var target_pos = nearby_targets[fork_index].position
-		return (target_pos - impact_position).normalized()
-	else:
-		# Sinon, spread en éventail
-		var base_angle = direction.angle()
-		var angle_step = spread_angle / max(1, fork_count - 1)
-		var fork_angle = base_angle - (spread_angle / 2) + (fork_index * angle_step)
-		
-		# Petite variation aléatoire
-		fork_angle += randf_range(-PI/12, PI/12)  # ±15 degrés
-		
-		return Vector2(cos(fork_angle), sin(fork_angle))
+func _on_area_entered(area):
+	var parent = area.get_parent()
+	if parent:
+		_on_body_entered(parent)
 
 func should_damage_target(body) -> bool:
 	match owner_type:
@@ -184,16 +101,166 @@ func should_damage_target(body) -> bool:
 		_:
 			return true
 
-func on_lifetime_end():
-	# Si pas encore forké à la fin de vie, fork quand même
-	if not has_forked:
-		print("🏹 Fork triggered on lifetime end")
-		create_fork_projectiles(global_position)
-		has_forked = true
+func create_fork_arrows(impact_pos: Vector2):
+	print("🏹 Creating ", fork_count, " fork arrows!")
+	
+	for i in range(fork_count):
+		call_deferred("spawn_fork", i, impact_pos)
+
+func spawn_fork(index: int, impact_pos: Vector2):
+	# Créer projectile simple
+	var fork = Area2D.new()
+	fork.name = "Fork_" + str(index)
+	
+	# Sprite
+	var fork_sprite = Sprite2D.new()
+	fork.add_child(fork_sprite)
+	
+	if sprite and sprite.texture:
+		fork_sprite.texture = sprite.texture
+		fork_sprite.scale = Vector2(0.7, 0.7)
+		fork_sprite.modulate = Color.LIGHT_BLUE
+	
+	# Collision
+	var fork_collision = CollisionShape2D.new()
+	var fork_shape = RectangleShape2D.new()
+	fork_shape.size = Vector2(10, 4)
+	fork_collision.shape = fork_shape
+	fork.add_child(fork_collision)
+	
+	# Position et direction
+	fork.global_position = impact_pos
+	var fork_direction = get_fork_direction(index, impact_pos)
+	
+	# Vérification de sécurité pour la direction
+	if fork_direction == Vector2.ZERO:
+		fork_direction = Vector2.RIGHT
+	
+	fork_sprite.rotation = fork_direction.angle()
+	
+	# Configuration
+	fork.collision_layer = collision_layer
+	fork.collision_mask = collision_mask
+	
+	# Ajouter au scene d'abord
+	get_tree().current_scene.add_child(fork)
+	
+	# Puis définir les métadonnées
+	fork.set_meta("direction", fork_direction)
+	fork.set_meta("speed", speed * 0.8)
+	fork.set_meta("damage", damage * 0.6)
+	fork.set_meta("owner_type", owner_type)
+	fork.set_meta("lifetime", 2.0)
+	
+	# Script simplifié
+	var script_code = """
+extends Area2D
+
+var direction: Vector2 = Vector2.RIGHT
+var speed: float = 300.0
+var damage: float = 10.0
+var owner_type: String = "player"
+var lifetime: float = 2.0
+var timer: float = 0.0
+
+func _ready():
+	# Attendre une frame pour que les métadonnées soient bien définies
+	await get_tree().process_frame
+	
+	# Récupération des métadonnées
+	if has_meta('direction'):
+		direction = get_meta('direction')
+		print('🏹 Fork direction: ', direction)
+	
+	if has_meta('speed'):
+		speed = get_meta('speed')
+		print('🏹 Fork speed: ', speed)
+	
+	if has_meta('damage'):
+		damage = get_meta('damage')
+	
+	if has_meta('owner_type'):
+		owner_type = get_meta('owner_type')
+	
+	if has_meta('lifetime'):
+		lifetime = get_meta('lifetime')
+	
+	body_entered.connect(_on_hit)
+	area_entered.connect(_on_area_hit)
+	
+	print('🏹 Fork ', name, ' ready: dir=', direction, ' speed=', speed)
+
+func _physics_process(delta):
+	# Vérification de sécurité
+	if direction == Vector2.ZERO:
+		direction = Vector2.RIGHT
+		print('⚠️ Fork direction was zero, using RIGHT')
+	
+	global_position += direction * speed * delta
+	timer += delta
+	if timer >= lifetime:
+		queue_free()
+
+func _on_hit(body):
+	if not should_damage(body):
+		return
+	
+	if body.has_method('take_damage'):
+		body.take_damage(damage)
+		print('🏹 Fork hit ', body.name, ' for ', damage)
 	
 	queue_free()
 
-# Override pour empêcher la gestion normale des hits de BaseProjectile
-func _on_hit_area(area):
-	# Ne pas traiter les hits d'area pour éviter les conflits
-	pass
+func _on_area_hit(area):
+	var parent = area.get_parent()
+	if parent:
+		_on_hit(parent)
+
+func should_damage(body) -> bool:
+	match owner_type:
+		'player':
+			return body.is_in_group('enemies')
+		'enemy':
+			return body.is_in_group('players')
+		_:
+			return true
+"""
+	
+	var script = GDScript.new()
+	script.source_code = script_code
+	fork.set_script(script)
+	
+	print("🏹 Fork ", index + 1, " spawned at ", impact_pos, " with direction ", fork_direction)
+
+func get_fork_direction(index: int, impact_pos: Vector2) -> Vector2:
+	# Chercher des ennemis proches
+	var target_group = "enemies" if owner_type == "player" else "players"
+	var nearby_enemies = []
+	
+	for enemy in get_tree().get_nodes_in_group(target_group):
+		if not is_instance_valid(enemy):
+			continue
+		
+		var distance = impact_pos.distance_to(enemy.global_position)
+		if distance <= 200 and distance > 20:
+			nearby_enemies.append(enemy)
+	
+	# Si on a des cibles, viser la plus proche pour ce fork
+	if index < nearby_enemies.size():
+		var target_direction = (nearby_enemies[index].global_position - impact_pos).normalized()
+		if target_direction != Vector2.ZERO:
+			return target_direction
+	
+	# Sinon, spread en éventail
+	var base_angle = direction.angle()
+	var spread = PI / 3  # 60 degrés
+	var angle_step = spread / max(1, fork_count - 1)
+	var fork_angle = base_angle - (spread / 2) + (index * angle_step)
+	
+	var result = Vector2(cos(fork_angle), sin(fork_angle))
+	
+	# Vérification finale
+	if result == Vector2.ZERO:
+		result = Vector2.RIGHT
+	
+	return result

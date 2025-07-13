@@ -1,4 +1,4 @@
-# DifficultyManager.gd - Nouveau script à créer comme autoload
+# DifficultyManager.gd - Version corrigée sans tween_delay
 extends Node
 
 # Progression basée sur les kills
@@ -15,9 +15,9 @@ var base_enemy_damage: Dictionary = {
 }
 
 # Système d'armure
-var armor_per_kill: float = 0.02  # +2% de réduction de dégâts par kill
-var health_per_kill: float = 0.05  # +5% de vie par kill
-var damage_per_kill: float = 0.03  # +3% de dégâts par kill
+var armor_per_kill: float = 0.02
+var health_per_kill: float = 0.05
+var damage_per_kill: float = 0.03
 
 # Paliers de difficulté
 var difficulty_thresholds: Array = [25, 50, 100, 200, 400, 800]
@@ -29,7 +29,7 @@ func get_enemy_stats(enemy_type: String) -> Dictionary:
 	# Calculer les multiplicateurs
 	var health_multiplier = 1.0 + (kills * health_per_kill)
 	var damage_multiplier = 1.0 + (kills * damage_per_kill)
-	var armor_value = min(kills * armor_per_kill, 0.8)  # Max 80% de réduction
+	var armor_value = min(kills * armor_per_kill, 0.8)
 	
 	# Bonus selon les paliers
 	var difficulty_bonus = get_difficulty_bonus()
@@ -44,41 +44,30 @@ func get_enemy_stats(enemy_type: String) -> Dictionary:
 	# Bonus selon le type d'ennemi
 	match enemy_type:
 		"Elite":
-			# Elite encore plus forts
 			final_health *= 1.3
 			final_damage *= 1.2
 			armor_value += 0.1
 		"Shooter":
-			# Shooters plus résistants à distance
 			armor_value += 0.05
 	
 	return {
 		"health": final_health,
 		"damage": final_damage,
-		"armor": min(armor_value, 0.85),  # Max 85% de réduction
+		"armor": min(armor_value, 0.85),
 		"kills_scaled": kills
 	}
 
 func get_difficulty_bonus() -> Dictionary:
-	# Vérifier si on a atteint un nouveau palier
 	update_difficulty_level()
 	
-	# Bonus selon le niveau de difficulté
 	match current_difficulty_level:
-		0:  # 0-24 kills
-			return {"health": 1.0, "damage": 1.0, "armor": 0.0}
-		1:  # 25-49 kills
-			return {"health": 1.2, "damage": 1.1, "armor": 0.05}
-		2:  # 50-99 kills
-			return {"health": 1.5, "damage": 1.3, "armor": 0.1}
-		3:  # 100-199 kills
-			return {"health": 2.0, "damage": 1.5, "armor": 0.15}
-		4:  # 200-399 kills
-			return {"health": 2.5, "damage": 1.8, "armor": 0.2}
-		5:  # 400-799 kills
-			return {"health": 3.0, "damage": 2.2, "armor": 0.25}
-		_:  # 800+ kills - Mode Nightmare
-			return {"health": 4.0, "damage": 3.0, "armor": 0.3}
+		0: return {"health": 1.0, "damage": 1.0, "armor": 0.0}
+		1: return {"health": 1.2, "damage": 1.1, "armor": 0.05}
+		2: return {"health": 1.5, "damage": 1.3, "armor": 0.1}
+		3: return {"health": 2.0, "damage": 1.5, "armor": 0.15}
+		4: return {"health": 2.5, "damage": 1.8, "armor": 0.2}
+		5: return {"health": 3.0, "damage": 2.2, "armor": 0.25}
+		_: return {"health": 4.0, "damage": 3.0, "armor": 0.3}
 
 func update_difficulty_level():
 	var kills = GlobalData.total_kills
@@ -89,14 +78,12 @@ func update_difficulty_level():
 		if kills >= difficulty_thresholds[i]:
 			current_difficulty_level = i + 1
 	
-	# Afficher notification si nouveau palier
 	if current_difficulty_level > old_level:
 		show_difficulty_notification()
 
 func show_difficulty_notification():
 	print("🔥 DIFFICULTY INCREASED! Level ", current_difficulty_level)
 	
-	# Créer notification à l'écran
 	var notification = Label.new()
 	notification.text = "🔥 DIFFICULTÉ AUGMENTÉE! 🔥\nNiveau " + str(current_difficulty_level)
 	notification.position = Vector2(400, 200)
@@ -106,12 +93,22 @@ func show_difficulty_notification():
 	if get_tree().current_scene:
 		get_tree().current_scene.add_child(notification)
 		
-		# Animation de notification
+		# Animation CORRIGÉE sans tween_delay
 		var tween = create_tween()
 		tween.tween_property(notification, "scale", Vector2(1.5, 1.5), 0.5)
-		tween.tween_delay(2.0)
-		tween.tween_property(notification, "modulate:a", 0.0, 1.0)
-		tween.tween_callback(func(): notification.queue_free())
+		tween.tween_property(notification, "scale", Vector2(1.0, 1.0), 0.5)
+		
+		# Timer séparé pour la disparition
+		var timer = Timer.new()
+		notification.add_child(timer)
+		timer.wait_time = 3.0
+		timer.one_shot = true
+		timer.timeout.connect(func():
+			var fade_tween = create_tween()
+			fade_tween.tween_property(notification, "modulate:a", 0.0, 1.0)
+			fade_tween.tween_callback(func(): notification.queue_free())
+		)
+		timer.start()
 
 func get_difficulty_description() -> String:
 	match current_difficulty_level:
@@ -122,15 +119,3 @@ func get_difficulty_description() -> String:
 		4: return "Maître"
 		5: return "Légende"
 		_: return "CAUCHEMAR"
-
-func get_armor_description(armor_value: float) -> String:
-	if armor_value <= 0.1:
-		return "Aucune armure"
-	elif armor_value <= 0.3:
-		return "Armure légère"
-	elif armor_value <= 0.5:
-		return "Armure moyenne"
-	elif armor_value <= 0.7:
-		return "Armure lourde"
-	else:
-		return "Armure ultime"

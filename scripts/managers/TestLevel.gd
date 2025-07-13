@@ -1,4 +1,4 @@
-# TestLevel.gd - Ajout du nettoyage automatique
+# TestLevel.gd - Version complète avec tous les systèmes intégrés
 extends Node2D
 
 # Références aux éléments de la scène
@@ -7,6 +7,10 @@ extends Node2D
 @onready var health_bar: ProgressBar = get_node_or_null("CanvasLayer/HUD/HealthBar")
 @onready var kill_counter: Label = get_node_or_null("CanvasLayer/HUD/KillCounter")
 @onready var level_info: Label = get_node_or_null("CanvasLayer/HUD/LevelInfo")
+
+# Systèmes du jeu
+var drop_system: EnemyDropSystem
+var buff_system: BuffSystem
 
 # Timer de nettoyage local
 var local_cleanup_timer: Timer
@@ -23,33 +27,62 @@ func _ready():
 	else:
 		print("ERROR: No Player found in scene!")
 	
-	# Créer le système de drops
-	var drop_system = EnemyDropSystem.new()
+	# === CRÉER LES SYSTÈMES DE JEU ===
+	setup_game_systems()
+	
+	# Timer de nettoyage local
+	setup_local_cleanup()
+	
+	# Connecter les signaux
+	setup_signals()
+	
+	update_hud()
+
+func setup_game_systems():
+	# === SYSTÈME DE DROPS D'ARMES ===
+	drop_system = EnemyDropSystem.new()
 	drop_system.name = "DropSystem"
 	add_child(drop_system)
 	drop_system.add_to_group("drop_system")
 	
-	print("Drop system created and added to scene")
+	# === SYSTÈME DE BUFFS ===
+	buff_system = BuffSystem.new()
+	buff_system.name = "BuffSystem"
+	add_child(buff_system)
+	buff_system.add_to_group("buff_system")
 	
-	# AJOUT : Timer de nettoyage local pour ce niveau
-	setup_local_cleanup()
+	print("✅ Drop system created")
+	print("⭐ Buff system created")
+
+func setup_signals():
+	# Connecter le signal de kill count
+	if GlobalData.has_signal("kill_count_updated"):
+		GlobalData.kill_count_updated.connect(_on_kill_count_updated)
 	
-	update_hud()
+	# Connecter le signal de santé du joueur
+	if player and player.has_signal("health_changed"):
+		player.health_changed.connect(_on_player_health_changed)
+
+func _on_kill_count_updated(new_count: int):
+	if kill_counter:
+		kill_counter.text = "Kills: " + str(new_count)
+
+func _on_player_health_changed(current_health: float, max_health: float):
+	if health_bar:
+		var health_percent = (current_health / max_health) * 100
+		health_bar.value = health_percent
 
 func setup_local_cleanup():
-	# Timer de nettoyage spécifique à ce niveau
 	local_cleanup_timer = Timer.new()
 	add_child(local_cleanup_timer)
-	local_cleanup_timer.wait_time = 5.0  # Toutes les 5 secondes
+	local_cleanup_timer.wait_time = 5.0
 	local_cleanup_timer.timeout.connect(_local_cleanup)
 	local_cleanup_timer.start()
 	
 	print("🧹 Local cleanup timer started")
 
 func _local_cleanup():
-	# Nettoyage spécifique au niveau
 	cleanup_level_sprites()
-
 func cleanup_level_sprites():
 	var sprites_removed = 0
 	
@@ -57,6 +90,10 @@ func cleanup_level_sprites():
 	var children_to_check = get_children().duplicate()
 	
 	for child in children_to_check:
+		# Vérifier que l'enfant existe encore
+		if not is_instance_valid(child):
+			continue
+		
 		# Sprites orphelins au niveau racine
 		if child is Sprite2D:
 			if not child.get_parent() is WeaponPickup and not child.get_parent() is BaseProjectile:
@@ -65,14 +102,140 @@ func cleanup_level_sprites():
 				sprites_removed += 1
 		
 		# Pickups corrompus
-		if child is WeaponPickup:
-			if not is_instance_valid(child.sprite) or child.is_being_destroyed:
-				print("🧹 Removing corrupted pickup: ", child.weapon_name if child.weapon_name else "Unknown")
+		elif child is WeaponPickup:
+			# CORRECTION : Vérifier les propriétés correctement
+			var should_remove = false
+			
+			# Vérifier si le sprite du pickup existe
+			if not is_instance_valid(child.sprite):
+				should_remove = true
+				print("🧹 Pickup has invalid sprite")
+			
+			# Vérifier la propriété is_being_destroyed s'elle existe
+			if child.has_method("get") and child.get("is_being_destroyed") == true:
+				should_remove = true
+				print("🧹 Pickup is being destroyed")
+			
+			# Alternative plus sûre : vérifier directement la variable
+			if "is_being_destroyed" in child and child.is_being_destroyed:
+				should_remove = true
+				print("🧹 Pickup marked for destruction")
+			
+			if should_remove:
+				var weapon_name = "Unknown"
+				if "weapon_name" in child and child.weapon_name:
+					weapon_name = child.weapon_name
+				print("🧹 Removing corrupted pickup: ", weapon_name)
+				child.queue_free()
+				sprites_removed += 1
+		
+		# NOUVEAU : Nettoyer les Area2D orphelines (projectiles morts)
+		elif child is Area2D and not child is WeaponPickup:
+			# Vérifier si c'est un projectile mort
+			if not child.has_method("_physics_process") or not is_instance_valid(child.get_parent()):
+				print("🧹 Removing orphaned Area2D: ", child.name)
+				child.queue_free()
+				sprites_removed += 1
+		
+		# NOUVEAU : Nettoyer les timers orphelins
+		elif child is Timer:
+			# Vérifier si le timer a un parent valide
+			var timer_parent = child.get_parent()
+			if not is_instance_valid(timer_parent) or timer_parent == self:
+				print("🧹 Removing orphaned timer: ", child.name)
+				child.queue_free()
+				sprites_removed += 1
+		
+		# NOUVEAU : Nettoyer les labels temporaires
+		elif child is Label:
+			# Labels de dégâts qui traînent
+			if child.name.begins_with("damage_") or child.position.y < -100:
+				print("🧹 Removing temporary label: ", child.name)
 				child.queue_free()
 				sprites_removed += 1
 	
 	if sprites_removed > 0:
 		print("🧹 Level cleanup: ", sprites_removed, " objects removed")
+
+# NOUVELLE MÉTHODE : Nettoyage plus agressif si nécessaire
+func force_cleanup_all():
+	print("🧹 FORCE CLEANUP ACTIVATED!")
+	
+	var total_removed = 0
+	var children_to_check = get_children().duplicate()
+	
+	for child in children_to_check:
+		if not is_instance_valid(child):
+			continue
+		
+		# Garder seulement les éléments essentiels
+		var is_essential = false
+		
+		# Liste des éléments à garder
+		if child.name in ["Player", "CanvasLayer", "TileMapLayer", "WeaponSpawner", "EnemySpawner", "DropSystem"]:
+			is_essential = true
+		
+		# Garder les éléments avec des groupes importants
+		if child.is_in_group("players") or child.is_in_group("essential"):
+			is_essential = true
+		
+		# Supprimer tout le reste
+		if not is_essential:
+			print("🧹 Force removing: ", child.name, " (", child.get_class(), ")")
+			child.queue_free()
+			total_removed += 1
+	
+	print("🧹 Force cleanup removed ", total_removed, " objects")
+
+# AMÉLIORATION : Nettoyage automatique plus intelligent
+func _on_timer_automatic_cleanup():
+	# Nettoyage automatique toutes les 10 secondes
+	var enemy_count = get_tree().get_nodes_in_group("enemies").size()
+	var pickup_count = get_tree().get_nodes_in_group("weapon_pickups").size()
+	
+	# Si trop d'objets, faire un nettoyage
+	if enemy_count > 30 or pickup_count > 10:
+		print("🧹 Too many objects detected, cleaning up...")
+		cleanup_level_sprites()
+	
+	# Si vraiment trop d'objets, nettoyage forcé
+	if get_child_count() > 100:
+		print("🧹 Object count critical (", get_child_count(), "), force cleanup!")
+		force_cleanup_all()
+
+# Améliorer la méthode _input existante
+func _input(event):
+	# Nettoyage manuel avec C
+	if Input.is_action_just_pressed("clear"):
+		print("🧹 Manual cleanup triggered from TestLevel!")
+		
+		# Nettoyage progressif
+		cleanup_level_sprites()
+		
+		# Si Shift+C, nettoyage forcé
+		if Input.is_key_pressed(KEY_SHIFT):
+			print("🧹 SHIFT+C detected - FORCE CLEANUP!")
+			force_cleanup_all()
+		
+		# Nettoyage global si le CleanupManager existe
+		if has_node("/root/WeaponCleanupManager"):
+			var cleanup_manager = get_node("/root/WeaponCleanupManager")
+			if cleanup_manager.has_method("force_cleanup"):
+				cleanup_manager.force_cleanup()
+		
+		print("🧹 Manual cleanup complete!")
+	
+	# Test: K pour ajouter des kills
+	if Input.is_action_pressed("ui_accept") and Input.is_key_pressed(KEY_K):
+		GlobalData.add_kill()
+		update_hud()
+		print("Kill added! Total:", GlobalData.total_kills)
+	
+	# Test: Echap pour retourner à la sélection
+	if Input.is_action_pressed("ui_cancel"):
+		get_tree().change_scene_to_file("res://scenes/ui/CharacterSelection.tscn")
+
+
 
 func center_player():
 	var viewport_size = get_viewport().get_visible_rect().size
@@ -87,6 +250,10 @@ func apply_character_stats():
 		player.current_health = player.max_health
 		player.speed = stats.get("speed", 200)
 		player.damage = stats.get("damage", 20)
+		
+		# Sauvegarder les stats de base pour les buffs
+		player.base_damage = player.damage
+		player.base_speed = player.speed
 		
 		print("Stats applied - Health:", player.max_health, " Speed:", player.speed, " Damage:", player.damage)
 	else:
@@ -114,14 +281,10 @@ func create_colored_sprite():
 	var image = Image.create(64, 64, false, Image.FORMAT_RGB8)
 	
 	match GlobalData.selected_character_id:
-		0:
-			image.fill(Color.RED)
-		1:
-			image.fill(Color.GREEN)
-		2:
-			image.fill(Color.BLUE)
-		_:
-			image.fill(Color.WHITE)
+		0: image.fill(Color.RED)
+		1: image.fill(Color.GREEN)
+		2: image.fill(Color.BLUE)
+		_: image.fill(Color.WHITE)
 	
 	var texture = ImageTexture.new()
 	texture.set_image(image)
@@ -144,26 +307,80 @@ func update_hud():
 		var health_percent = (player.current_health / player.max_health) * 100
 		health_bar.value = health_percent
 
-func _input(event):
-	# AJOUT : Nettoyage manuel avec C
-	if Input.is_action_just_pressed("clear"):
-		print("🧹 Manual cleanup triggered from TestLevel!")
-		
-		# Nettoyage local
-		cleanup_level_sprites()
-		
-		# Nettoyage global si le CleanupManager existe
-		if has_node("/root/CleanupManager"):
-			get_node("/root/CleanupManager").force_cleanup_all()
-		
-		print("🧹 Manual cleanup complete!")
+
+
+func show_active_buffs_debug():
+	if not buff_system:
+		print("No buff system found!")
+		return
 	
-	# Test: K pour ajouter des kills
-	if Input.is_action_pressed("ui_accept") and Input.is_key_pressed(KEY_K):
-		GlobalData.add_kill()
-		update_hud()
-		print("Kill added! Total:", GlobalData.total_kills)
+	var active_buffs = buff_system.get_active_buffs()
+	print("=== ACTIVE BUFFS DEBUG ===")
+	print("Total active buffs: ", active_buffs.size())
 	
-	# Test: Echap pour retourner à la sélection
-	if Input.is_action_pressed("ui_cancel"):
-		get_tree().change_scene_to_file("res://scenes/ui/CharacterSelection.tscn")
+	for buff in active_buffs:
+		print("- ", buff.name, " (", buff.remaining_time, "s remaining)")
+	
+	if player:
+		print("=== PLAYER METAS ===")
+		var metas = [
+			"damage_boost", "fire_rate_boost", "damage_reduction", 
+			"lifesteal", "extra_projectiles", "chain_lightning_chance",
+			"penetration_bonus", "poison_damage", "fire_damage_percent"
+		]
+		
+		for meta in metas:
+			if player.has_meta(meta):
+				print("- ", meta, ": ", player.get_meta(meta))
+
+# === NOUVELLES MÉTHODES POUR LA COMMUNICATION ENTRE SYSTÈMES ===
+func _on_enemy_died(enemy_type: String, enemy_position: Vector2):
+	# Cette méthode sera appelée par BaseEnemy.die()
+	print("📢 Enemy died notification: ", enemy_type, " at ", enemy_position)
+	
+	# Notifier le système de drops
+	if drop_system and drop_system.has_method("_on_enemy_killed"):
+		drop_system._on_enemy_killed(enemy_type, enemy_position)
+	
+	# Notifier le système de buffs
+	if buff_system and buff_system.has_method("_on_enemy_killed"):
+		buff_system._on_enemy_killed(enemy_type, enemy_position)
+
+# Méthodes de debug et statistiques
+func get_game_stats() -> Dictionary:
+	var stats = {
+		"player_health": player.current_health if player else 0,
+		"total_kills": GlobalData.total_kills,
+		"active_buffs": 0,
+		"active_enemies": get_tree().get_nodes_in_group("enemies").size(),
+		"active_projectiles": get_tree().get_nodes_in_group("projectiles").size()
+	}
+	
+	if buff_system:
+		stats.active_buffs = buff_system.get_active_buffs().size()
+	
+	return stats
+
+func _process(_delta):
+	# Update continu du HUD
+	update_hud()
+	
+	# Debug stats (optionnel)
+	if OS.is_debug_build() and Input.is_key_pressed(KEY_F3):
+		var stats = get_game_stats()
+		if not has_node("DebugStats"):
+			var debug_label = Label.new()
+			debug_label.name = "DebugStats"
+			debug_label.position = Vector2(10, 150)
+			debug_label.add_theme_color_override("font_color", Color.YELLOW)
+			add_child(debug_label)
+		
+		var debug_label = get_node("DebugStats")
+		debug_label.text = "DEBUG STATS:\n"
+		debug_label.text += "Player HP: " + str(int(stats.player_health)) + "\n"
+		debug_label.text += "Kills: " + str(stats.total_kills) + "\n"
+		debug_label.text += "Active Buffs: " + str(stats.active_buffs) + "\n"
+		debug_label.text += "Enemies: " + str(stats.active_enemies) + "\n"
+		debug_label.text += "Projectiles: " + str(stats.active_projectiles)
+	elif has_node("DebugStats"):
+		get_node("DebugStats").queue_free()

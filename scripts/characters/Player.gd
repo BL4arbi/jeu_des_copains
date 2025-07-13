@@ -1,4 +1,4 @@
-# Player.gd - Version complète et simple
+# Player.gd - Version corrigée avec multishot et effets de statut
 extends BaseCharacter
 class_name Player
 
@@ -11,8 +11,9 @@ var is_dead: bool = false
 var respawn_time: float = 3.0
 var is_invulnerable: bool = false
 
-# Données du personnage
-var character_data: Dictionary = {}
+# Stats de base pour les buffs
+var base_damage: float = 20.0
+var base_speed: float = 200.0
 
 func _ready():
 	super._ready()
@@ -21,53 +22,19 @@ func _ready():
 	collision_layer = 1
 	collision_mask = 2
 	
-	character_data = GlobalData.get_character_data(GlobalData.selected_character_id)
+	# Sauvegarder les stats de base
+	base_damage = damage
+	base_speed = speed
+	
 	setup_character_weapons()
 	setup_character_animations()
 	
 	print("=== PLAYER READY ===")
 
 func setup_character_weapons():
-	match GlobalData.selected_character_id:
-		0: add_warrior_weapons()
-		1: add_archer_weapons()
-		2: add_mage_weapons()
-		_: add_basic_weapon()
-
-func add_warrior_weapons():
-	var heavy_weapon = ProjectileData.new()
-	heavy_weapon.projectile_name = "Marteau Lourd"
-	heavy_weapon.damage = 25.0
-	heavy_weapon.speed = 300.0
-	heavy_weapon.fire_rate = 0.8
-	heavy_weapon.lifetime = 4.0
-	heavy_weapon.projectile_scene_path = "res://scenes/projectiles/HeavyProjectile.tscn"
-	weapons.append(heavy_weapon)
-
-func add_archer_weapons():
-	var rapid_weapon = ProjectileData.new()
-	rapid_weapon.projectile_name = "Flèche Rapide"
-	rapid_weapon.damage = 15.0
-	rapid_weapon.speed = 600.0
-	rapid_weapon.fire_rate = 0.2
-	rapid_weapon.lifetime = 3.0
-	rapid_weapon.projectile_scene_path = "res://scenes/projectiles/BasicProjectile.tscn"
-	weapons.append(rapid_weapon)
-
-func add_mage_weapons():
-	var magic_weapon = ProjectileData.new()
-	magic_weapon.projectile_name = "Boule de Feu"
-	magic_weapon.damage = 20.0
-	magic_weapon.speed = 400.0
-	magic_weapon.fire_rate = 0.5
-	magic_weapon.lifetime = 5.0
-	magic_weapon.projectile_scene_path = "res://scenes/projectiles/BasicProjectile.tscn"
-	weapons.append(magic_weapon)
-
-func add_basic_weapon():
 	var basic_weapon = ProjectileData.new()
 	basic_weapon.projectile_name = "Tir Basique"
-	basic_weapon.damage = 10.0
+	basic_weapon.damage = 15.0
 	basic_weapon.speed = 500.0
 	basic_weapon.fire_rate = 0.3
 	basic_weapon.lifetime = 5.0
@@ -75,24 +42,7 @@ func add_basic_weapon():
 	weapons.append(basic_weapon)
 
 func setup_character_animations():
-	if not animation_player:
-		return
-	
-	match GlobalData.selected_character_id:
-		0: setup_warrior_animations()
-		1: setup_archer_animations()
-		2: setup_mage_animations()
-
-func setup_warrior_animations():
-	if animation_player.has_animation("walk"):
-		animation_player.speed_scale = 0.8
-
-func setup_archer_animations():
-	if animation_player.has_animation("walk"):
-		animation_player.speed_scale = 1.2
-
-func setup_mage_animations():
-	if animation_player.has_animation("walk"):
+	if animation_player and animation_player.has_animation("walk"):
 		animation_player.speed_scale = 1.0
 
 func _physics_process(delta):
@@ -102,7 +52,6 @@ func _physics_process(delta):
 	handle_movement()
 	handle_shooting(delta)
 	handle_weapon_switch()
-	update_sprite_direction()
 
 func handle_movement():
 	var input_direction = Vector2.ZERO
@@ -117,16 +66,9 @@ func handle_movement():
 		input_direction.y -= 1
 	
 	# Changement d'arme direct
-	if Input.is_action_pressed("weapon_1") and weapons.size() > 0:
-		current_weapon = 0
-	if Input.is_action_pressed("weapon_2") and weapons.size() > 1:
-		current_weapon = 1
-	if Input.is_action_pressed("weapon_3") and weapons.size() > 2:
-		current_weapon = 2
-	if Input.is_action_pressed("weapon_4") and weapons.size() > 3:
-		current_weapon = 3
-	if Input.is_action_pressed("weapon_5") and weapons.size() > 4:
-		current_weapon = 4
+	for i in range(5):
+		if Input.is_action_just_pressed("weapon_" + str(i + 1)) and weapons.size() > i:
+			current_weapon = i
 	
 	input_direction = input_direction.normalized()
 	velocity = input_direction * speed
@@ -138,39 +80,56 @@ func handle_shooting(delta):
 	if weapons.size() == 0:
 		return
 	
-	var current_fire_rate = weapons[current_weapon].fire_rate
+	var weapon = weapons[current_weapon]
+	var effective_fire_rate = get_effective_fire_rate(weapon.fire_rate)
 	
-	if (Input.is_action_pressed("ui_accept") or Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT)) and fire_timer >= current_fire_rate:
-		fire_projectile()
+	if (Input.is_action_pressed("ui_accept") or Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT)) and fire_timer >= effective_fire_rate:
+		fire_weapon()
 		fire_timer = 0.0
 
-func fire_projectile():
+func get_effective_fire_rate(base_fire_rate: float) -> float:
+	var fire_rate_boost = get_meta("fire_rate_boost", 0.0)
+	return base_fire_rate * (1.0 - fire_rate_boost)
+
+func get_effective_damage(base_weapon_damage: float) -> float:
+	var damage_boost = get_meta("damage_boost", 0.0)
+	var total_damage = (damage + base_weapon_damage) * (1.0 + damage_boost)
+	return total_damage
+
+func fire_weapon():
 	var weapon = weapons[current_weapon]
 	var mouse_pos = get_global_mouse_position()
 	
-	# SIMPLE : Selon le nom de l'arme
+	# Tir principal
+	fire_projectile(weapon, mouse_pos)
+	
+	# === MULTISHOT : PROJECTILES SUPPLÉMENTAIRES ===
+	var extra_projectiles = get_meta("extra_projectiles", 0)
+	if extra_projectiles > 0:
+		var base_direction = (mouse_pos - global_position).normalized()
+		var spread_angle = PI / 8  # 22.5 degrés de chaque côté
+		
+		for i in range(extra_projectiles):
+			var angle_offset = spread_angle * (i + 1)
+			if i % 2 == 1:
+				angle_offset *= -1  # Alterner les côtés
+			
+			var direction = base_direction.rotated(angle_offset)
+			var target_pos = global_position + direction * 500
+			
+			fire_projectile(weapon, target_pos)
+	
+	# === EFFETS DE BUFFS SPÉCIAUX ===
+	# Chain Lightning
+	var chain_chance = get_meta("chain_lightning_chance", 0.0)
+	if chain_chance > 0 and randf() < chain_chance:
+		fire_chain_lightning()
+
+func fire_projectile(weapon: ProjectileData, target_pos: Vector2):
 	if weapon.projectile_name == "Foudre":
-		fire_lightning()
-	else:
-		fire_normal_projectile(weapon, mouse_pos)
-
-func fire_lightning():
-	print("⚡ FIRING LIGHTNING!")
+		fire_lightning_special()
+		return
 	
-	# Créer la foudre directement
-	var lightning_scene = load("res://scenes/projectiles/Lightning_projectile.tscn")
-	var lightning = lightning_scene.instantiate()
-	
-	get_tree().current_scene.add_child(lightning)
-	
-	# Configuration simple
-	lightning.owner_type = "player"
-	lightning.damage = weapons[current_weapon].damage
-	lightning.global_position = global_position
-	
-	print("⚡ Lightning created at player position: ", global_position)
-
-func fire_normal_projectile(weapon: ProjectileData, target_pos: Vector2):
 	if not ResourceLoader.exists(weapon.projectile_scene_path):
 		print("ERROR: Projectile scene not found: ", weapon.projectile_scene_path)
 		return
@@ -180,11 +139,84 @@ func fire_normal_projectile(weapon: ProjectileData, target_pos: Vector2):
 	
 	get_tree().current_scene.add_child(projectile)
 	
+	# Configuration de base
 	projectile.set_owner_type("player")
-	projectile.setup(weapon.damage, weapon.speed, weapon.lifetime)
+	
+	# === APPLIQUER LES BUFFS AU PROJECTILE ===
+	var final_damage = get_effective_damage(weapon.damage)
+	var final_speed = weapon.speed
+	var final_lifetime = weapon.lifetime
+	
+	# Penetration
+	var penetration = get_meta("penetration_bonus", 0)
+	if penetration > 0:
+		projectile.pierces_remaining = penetration
+		projectile.max_pierces = penetration
+		print("🏹 Projectile with ", penetration, " penetration")
+	
+	# Effets de statut selon les buffs actifs
+	apply_status_effects_to_projectile(projectile)
+	
+	projectile.setup(final_damage, final_speed, final_lifetime)
 	
 	var spawn_offset = (target_pos - global_position).normalized() * 30
 	projectile.launch(global_position + spawn_offset, target_pos)
+
+func apply_status_effects_to_projectile(projectile):
+	# Poison damage
+	var poison_damage = get_meta("poison_damage", 0.0)
+	if poison_damage > 0:
+		projectile.add_status_effect("poison", 8.0, poison_damage)
+		print("☠️ Projectile with poison: ", poison_damage, " DPS")
+	
+	# Fire damage (basé sur HP max)
+	var fire_percent = get_meta("fire_damage_percent", 0.0)
+	if fire_percent > 0:
+		var fire_damage = max_health * fire_percent
+		projectile.add_status_effect("burn", 6.0, fire_damage)
+		print("🔥 Projectile with fire: ", fire_damage, " DPS")
+	
+	# Ice slow
+	var ice_slow = get_meta("ice_slow_power", 0.0)
+	if ice_slow > 0:
+		projectile.add_status_effect("slow", 4.0, ice_slow)
+		print("❄️ Projectile with ice slow: ", ice_slow)
+	
+	# Lightning stun
+	var lightning_stun = get_meta("lightning_stun_duration", 0.0)
+	if lightning_stun > 0:
+		projectile.add_status_effect("freeze", lightning_stun, 1.0)
+		print("⚡ Projectile with lightning stun: ", lightning_stun, "s")
+
+func fire_chain_lightning():
+	print("⚡ CHAIN LIGHTNING triggered!")
+	
+	var lightning_scene = load("res://scenes/projectiles/Lightning_projectile.tscn")
+	if not lightning_scene:
+		return
+	
+	var lightning = lightning_scene.instantiate()
+	get_tree().current_scene.add_child(lightning)
+	
+	lightning.owner_type = "player"
+	lightning.damage = damage * 0.6
+	lightning.max_targets = 4
+	lightning.global_position = global_position
+
+func fire_lightning_special():
+	print("⚡ FIRING SPECIAL LIGHTNING!")
+	
+	var lightning_scene = load("res://scenes/projectiles/Lightning_projectile.tscn")
+	if not lightning_scene:
+		return
+	
+	var lightning = lightning_scene.instantiate()
+	get_tree().current_scene.add_child(lightning)
+	
+	lightning.owner_type = "player"
+	lightning.damage = weapons[current_weapon].damage
+	lightning.max_targets = 5
+	lightning.global_position = global_position
 
 func handle_weapon_switch():
 	if Input.is_action_just_pressed("ui_up") and weapons.size() > 1:
@@ -207,13 +239,42 @@ func pickup_weapon(weapon_data: ProjectileData) -> bool:
 	print("✅ Added weapon: ", weapon_data.projectile_name)
 	return true
 
-# OVERRIDE take_damage pour gérer l'invulnérabilité
+# === OVERRIDE take_damage POUR LES BUFFS DÉFENSIFS ===
 func take_damage(amount: float):
 	if is_dead or is_invulnerable:
 		print("🛡️ Damage blocked (dead or invulnerable)")
 		return
 	
-	super.take_damage(amount)
+	# Appliquer la réduction de dégâts (armor buff)
+	var damage_reduction = get_meta("damage_reduction", 0.0)
+	var final_damage = amount * (1.0 - damage_reduction)
+	
+	if damage_reduction > 0:
+		print("🛡️ Damage reduced from ", amount, " to ", final_damage, " (", int(damage_reduction*100), "% reduction)")
+	
+	super.take_damage(final_damage)
+
+# === MÉTHODE POUR APPLIQUER LE LIFESTEAL ===
+func apply_lifesteal_on_damage(damage_dealt: float):
+	var lifesteal = get_meta("lifesteal", 0.0)
+	if lifesteal > 0:
+		var heal_amount = damage_dealt * lifesteal
+		heal(heal_amount)
+		show_lifesteal_effect(heal_amount)
+
+func show_lifesteal_effect(heal_amount: float):
+	var heal_label = Label.new()
+	heal_label.text = "+" + str(int(heal_amount))
+	heal_label.add_theme_color_override("font_color", Color.GREEN)
+	heal_label.add_theme_font_size_override("font_size", 16)
+	heal_label.position = global_position + Vector2(randf_range(-30, 30), -40)
+	
+	get_tree().current_scene.add_child(heal_label)
+	
+	var tween = create_tween()
+	tween.parallel().tween_property(heal_label, "position:y", heal_label.position.y - 50, 1.0)
+	tween.parallel().tween_property(heal_label, "modulate:a", 0.0, 1.0)
+	tween.tween_callback(func(): heal_label.queue_free())
 
 # OVERRIDE die pour le respawn
 func die():
@@ -228,7 +289,6 @@ func die():
 	visible = false
 	collision_layer = 0
 	
-	# Effet de mort simple
 	create_death_effect()
 	
 	# Timer de respawn
@@ -239,13 +299,11 @@ func die():
 	respawn_timer.timeout.connect(_on_respawn)
 	respawn_timer.start()
 	
-	# UI de respawn simple
 	show_death_message()
 
 func _on_respawn():
 	print("✨ Player respawning!")
 	
-	# Réinitialiser
 	is_dead = false
 	visible = true
 	collision_layer = 1
@@ -281,7 +339,6 @@ func _on_respawn():
 	hide_death_message()
 
 func create_death_effect():
-	# Effet simple de mort
 	for i in range(5):
 		var particle = Sprite2D.new()
 		get_tree().current_scene.add_child(particle)
@@ -317,7 +374,7 @@ func hide_death_message():
 		death_message.queue_free()
 		death_message = null
 
-# Méthodes pour les effets de statut (garder existantes)
+# Méthodes pour les effets de statut existantes
 func apply_status_effect(effect_type: String, duration: float, power: float):
 	if is_dead:
 		return

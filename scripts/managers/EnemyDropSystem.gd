@@ -226,33 +226,7 @@ func is_weapon_unlocked(weapon_name: String) -> bool:
 		_:
 			return true  # Autres armes toujours disponibles
 
-func create_weapon_pickup(weapon_name: String, weapon_info: Dictionary, position: Vector2):
-	# Créer le pickup d'arme
-	var pickup_scene = preload("res://scenes/ui/weapon_pickup.tscn")
-	var pickup = pickup_scene.instantiate()
-	
-	# Configuration du pickup
-	pickup.weapon_name = weapon_name
-	pickup.damage = weapon_info.damage
-	pickup.speed = weapon_info.speed
-	pickup.fire_rate = weapon_info.fire_rate
-	pickup.projectile_scene_path = weapon_info.scene_path
-	pickup.weapon_description = weapon_info.description
-	pickup.weapon_rarity = determine_rarity(weapon_name)
-	
-	if weapon_info.has("special_properties"):
-		pickup.special_properties = weapon_info.special_properties
-	
-	# Position avec léger décalage aléatoire
-	var random_offset = Vector2(randf_range(-30, 30), randf_range(-30, 30))
-	pickup.global_position = position + random_offset
-	
-	get_tree().current_scene.add_child(pickup)
-	
-	# Effet visuel de drop
-	create_drop_effect(position, determine_rarity(weapon_name))
-	
-	print("💎 ", weapon_name, " dropped by enemy at ", position)
+
 
 func determine_rarity(weapon_name: String) -> String:
 	# Déterminer la rareté selon l'arme
@@ -363,3 +337,45 @@ func get_unlocked_weapons_count() -> int:
 		if is_weapon_unlocked(weapon_name):
 			count += 1
 	return count
+func create_weapon_pickup(weapon_name: String, weapon_info: Dictionary, position: Vector2):
+	# CORRECTION : Utiliser call_deferred pour éviter l'erreur de monitoring
+	call_deferred("_create_weapon_pickup_deferred", weapon_name, weapon_info, position)
+
+func _create_weapon_pickup_deferred(weapon_name: String, weapon_info: Dictionary, position: Vector2):
+	# Créer le pickup d'arme
+	var pickup_scene = preload("res://scenes/ui/weapon_pickup.tscn")
+	var pickup = pickup_scene.instantiate()
+	
+	# Configuration du pickup
+	pickup.weapon_name = weapon_name
+	pickup.damage = weapon_info.damage
+	pickup.speed = weapon_info.speed
+	pickup.fire_rate = weapon_info.fire_rate
+	pickup.projectile_scene_path = weapon_info.scene_path
+	pickup.weapon_description = weapon_info.description
+	pickup.weapon_rarity = determine_rarity(weapon_name)
+	
+	if weapon_info.has("special_properties"):
+		pickup.special_properties = weapon_info.special_properties
+	
+	# Position avec léger décalage aléatoire
+	var random_offset = Vector2(randf_range(-30, 30), randf_range(-30, 30))
+	pickup.global_position = position + random_offset
+	
+	# CORRECTION : Ajouter à la scène avec call_deferred
+	call_deferred("_add_pickup_to_scene", pickup, position)
+	
+	print("💎 ", weapon_name, " scheduled for drop at ", position)
+
+func _add_pickup_to_scene(pickup: WeaponPickup, position: Vector2):
+	if not get_tree() or not get_tree().current_scene:
+		print("❌ No scene available for pickup")
+		pickup.queue_free()
+		return
+	
+	get_tree().current_scene.add_child(pickup)
+	
+	# Effet visuel de drop
+	create_drop_effect(position, pickup.weapon_rarity)
+	
+	print("💎 ", pickup.weapon_name, " dropped successfully!")
