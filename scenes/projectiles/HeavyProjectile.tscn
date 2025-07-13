@@ -1,6 +1,6 @@
 [gd_scene load_steps=8 format=3 uid="uid://bqa55cfef2uph"]
 
-[ext_resource type="Script" uid="uid://ci680abwjv1gl" path="res://SCRIPTS/projectiles/BaseProjectile.gd" id="1_bbcot"]
+[ext_resource type="Script" uid="uid://ci680abwjv1gl" path="res://scripts/projectiles/BaseProjectile.gd" id="1_bbcot"]
 [ext_resource type="Texture2D" uid="uid://bqwatbffm5tlk" path="res://assets/SPRITES/projectiles/ELECTRO_BALL.png" id="2_3hrit"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_x6u5f"]
@@ -47,7 +47,7 @@ _data = {
 [sub_resource type="CircleShape2D" id="CircleShape2D_mghsu"]
 radius = 7.07107
 
-[node name="HeavyProjectile" type="RigidBody2D"]
+[node name="HeavyProjectile" type="Area2D"]
 collision_layer = 2
 script = ExtResource("1_bbcot")
 

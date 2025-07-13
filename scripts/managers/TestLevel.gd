@@ -21,7 +21,12 @@ func _ready():
 		update_player_sprite()
 	else:
 		print("ERROR: No Player found in scene!")
+	var drop_system = EnemyDropSystem.new()
+	drop_system.name = "DropSystem"
+	add_child(drop_system)
+	drop_system.add_to_group("drop_system")
 	
+	print("Drop system created and added to scene")
 	update_hud()
 
 func center_player():

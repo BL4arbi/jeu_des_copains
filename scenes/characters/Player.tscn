@@ -1,7 +1,8 @@
-[gd_scene load_steps=7 format=3 uid="uid://b27ohpasoalgu"]
+[gd_scene load_steps=8 format=3 uid="uid://b27ohpasoalgu"]
 
 [ext_resource type="Script" uid="uid://c8km822ksxlbb" path="res://scripts/characters/Player.gd" id="1_gin2a"]
 [ext_resource type="Texture2D" uid="uid://bfvfmij2c3cac" path="res://assets/tiles/TOP_DOWN_PLAYER_NEW.png" id="2_gin2a"]
+[ext_resource type="Script" uid="uid://bsp7rv0k7crk5" path="res://scenes/characters/health_bar.gd" id="3_7n8ao"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_mdl7e"]
 radius = 16.0312
@@ -44,6 +45,7 @@ _data = {
 }
 
 [node name="Player" type="CharacterBody2D"]
+collision_mask = 2
 script = ExtResource("1_gin2a")
 
 [node name="Sprite2D" type="Sprite2D" parent="."]
@@ -58,3 +60,8 @@ shape = SubResource("CircleShape2D_mdl7e")
 libraries = {
 &"": SubResource("AnimationLibrary_7wym0")
 }
+
+[node name="health_bar" type="ProgressBar" parent="."]
+offset_right = 4.0
+offset_bottom = 27.0
+script = ExtResource("3_7n8ao")

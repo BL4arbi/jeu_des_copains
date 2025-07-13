@@ -1,4 +1,4 @@
-# ProjectileData.gd
+# ProjectileData.gd - Correction pour special_properties
 extends Resource
 class_name ProjectileData
 
@@ -10,3 +10,6 @@ class_name ProjectileData
 @export var fire_rate: float = 0.3
 @export var projectile_scene_path: String = ""
 @export var description: String = ""
+
+# CORRECTION : Ajouter special_properties comme variable normale (pas @export)
+var special_properties: Dictionary = {}
