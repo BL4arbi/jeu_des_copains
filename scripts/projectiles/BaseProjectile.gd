@@ -178,8 +178,8 @@ func handle_homing_movement(delta):
 
 func handle_meteor_movement(delta):
 	# Mouvement en arc avec gravité
-	var gravity = Vector2(0, 200)  # Gravité vers le bas
-	direction += gravity * delta
+	var gravity_force  = Vector2(0, 200)  # Gravité vers le bas
+	direction += gravity_force * delta
 	global_position += direction * speed * delta
 
 func find_homing_target():

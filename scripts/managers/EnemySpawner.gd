@@ -1,4 +1,4 @@
-# EnemySpawner.gd
+# EnemySpawner.gd - Version corrigée
 extends Node
 class_name EnemySpawner
 
@@ -12,34 +12,34 @@ class_name EnemySpawner
 var spawn_timer: float = 0.0
 var active_enemies: Array = []
 
-# Types d'ennemis avec leurs scènes
+# Types d'ennemis équilibrés
 var enemy_types: Array = [
 	{
 		"name": "Grunt",
 		"scene": basic_enemy_scene,
 		"weight": 60,
-		"health": 30.0,
+		"health": 25.0,      # Réduit
 		"speed": 80.0,
-		"damage": 5.0,
+		"damage": 8.0,       # Réduit
 		"can_shoot": false
 	},
 	{
 		"name": "Shooter", 
 		"scene": shooting_enemy_scene,
 		"weight": 30,
-		"health": 20.0,
+		"health": 20.0,      # Réduit
 		"speed": 60.0,
-		"damage": 8.0,
+		"damage": 6.0,       # Réduit
 		"can_shoot": true,
 		"projectile_path": "res://scenes/projectiles/BasicProjectile.tscn"
 	},
 	{
 		"name": "Elite",
 		"scene": elite_enemy_scene,
-		"weight": 50,
-		"health": 80.0,
+		"weight": 10,
+		"health": 60.0,      # Réduit
 		"speed": 50.0,
-		"damage": 15.0,
+		"damage": 10.0,      # Réduit
 		"can_shoot": true,
 		"projectile_path": "res://scenes/projectiles/BasicProjectile.tscn"
 	}
@@ -62,13 +62,16 @@ func spawn_enemy():
 	
 	var enemy_type = choose_enemy_type()
 	
+	if not enemy_type.scene:
+		print("ERROR: Enemy scene is null for type: ", enemy_type.name)
+		return
+	
 	var enemy = enemy_type.scene.instantiate()
 	enemy.global_position = spawn_pos
 	
 	get_tree().current_scene.add_child(enemy)
 	
-	call_deferred("configure_enemy", enemy, enemy_type)
-	
+	enemy.call_deferred("configure_enemy_deferred", enemy_type)	
 	active_enemies.append(enemy)
 	enemy.tree_exiting.connect(_on_enemy_died.bind(enemy))
 	
@@ -90,6 +93,10 @@ func choose_enemy_type():
 	return enemy_types[0]
 
 func configure_enemy(enemy, enemy_type):
+	if not is_instance_valid(enemy):
+		return
+	
+	# Configuration des stats
 	enemy.max_health = enemy_type.health
 	enemy.current_health = enemy_type.health
 	enemy.speed = enemy_type.speed
@@ -100,11 +107,18 @@ func configure_enemy(enemy, enemy_type):
 	
 	if enemy.can_shoot:
 		enemy.projectile_scene_path = enemy_type.get("projectile_path", "")
-		enemy.fire_rate = 2.5 if enemy_type.name == "Shooter" else 2.0
-		if enemy_type.name == "Shooter":
-			enemy.optimal_distance = 180.0
+		
+		# Cadences de tir équilibrées
+		match enemy_type.name:
+			"Shooter":
+				enemy.fire_rate = 3.5  # Plus lent
+				enemy.optimal_distance = 180.0
+			"Elite":
+				enemy.fire_rate = 4.0  # Plus lent
 	
-	enemy.update_health_bar()
+	# Mettre à jour la health bar si elle existe
+	if enemy.has_method("update_health_bar"):
+		enemy.update_health_bar()
 
 func _on_enemy_died(enemy):
 	active_enemies.erase(enemy)

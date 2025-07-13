@@ -62,7 +62,7 @@ func add_archer_weapons():
 	rapid_weapon.speed = 600.0
 	rapid_weapon.fire_rate = 0.2
 	rapid_weapon.lifetime = 3.0
-	rapid_weapon.projectile_scene_path = "res://scenes/projectiles/ArrowProjectile.tscn"
+	rapid_weapon.projectile_scene_path = "res://scenes/projectiles/BasicProjectile.tscn"
 	weapons.append(rapid_weapon)
 
 func add_mage_weapons():

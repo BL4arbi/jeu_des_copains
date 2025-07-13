@@ -1,11 +1,11 @@
-# BaseEnemy.gd mis à jour
+# BaseEnemy.gd - Version complète sans erreurs
 extends BaseCharacter
 class_name BaseEnemy
 
 # Stats spécifiques aux ennemis
 var can_shoot: bool = false
 var projectile_scene_path: String = ""
-var fire_rate: float = 2.0
+var fire_rate: float = 3.0
 var detection_range: float = 300.0
 var melee_range: float = 50.0
 var is_elite: bool = false
@@ -16,14 +16,18 @@ var optimal_distance: float = 200.0
 var dodge_timer: float = 0.0
 var dodge_cooldown: float = 2.0
 var dodge_direction: Vector2 = Vector2.ZERO
-# Variables pour les attaques spéciales
-var is_casting_special: bool = false
-var cast_time: float = 0.0
-var cast_duration: float = 2.0  # 2 secondes de cast
-var special_attack_indicators: Array = []
-# Composants additionnels
-@onready var area_detector: Area2D = get_node_or_null("Area2D")
-@onready var area_collision: CollisionShape2D = get_node_or_null("Area2D/CollisionShape2D")
+
+# Variables pour les attaques mêlée
+var melee_attack_cooldown: float = 0.0
+var melee_attack_rate: float = 1.5
+var is_melee_attacking: bool = false
+var melee_attack_duration: float = 0.5
+var melee_hitbox: Area2D = null
+var attack_visual: Sprite2D = null
+
+# Variables pour les attaques spéciales (Elite seulement)
+var special_attack_cooldown: float = 0.0
+var special_attack_delay: float = 20.0
 
 # Variables d'état
 var target: Player
@@ -33,38 +37,76 @@ func _ready():
 	super._ready()
 	add_to_group("enemies")
 	
-	# Configuration des collision layers pour les ennemis
-	collision_layer = 2  # Layer 2 pour les ennemis
-	collision_mask = 1   # Peut collider avec le joueur (layer 1)
+	# Configuration des collision layers
+	collision_layer = 2
+	collision_mask = 1
 	
 	target = get_tree().get_first_node_in_group("players")
 	
-	if area_detector:
-		area_detector.body_entered.connect(_on_hit_player)
+	# Créer la hitbox mêlée
+	setup_melee_hitbox()
 	
-	print("=== ENEMY READY ===")
-	print("Enemy collision_layer: ", collision_layer)
-	print("Enemy collision_mask: ", collision_mask) 
-	print("Enemy groups: ", get_groups())
-	print("Enemy type: ", enemy_type)
+	print("Enemy ready: ", enemy_type)
+
+func setup_melee_hitbox():
+	# Créer une hitbox mêlée temporaire
+	melee_hitbox = Area2D.new()
+	add_child(melee_hitbox)
+	
+	# Shape de la hitbox
+	var hitbox_shape = CollisionShape2D.new()
+	var circle_shape = CircleShape2D.new()
+	circle_shape.radius = 40.0
+	hitbox_shape.shape = circle_shape
+	melee_hitbox.add_child(hitbox_shape)
+	
+	# Configuration collision
+	melee_hitbox.collision_layer = 0
+	melee_hitbox.collision_mask = 1
+	
+	# Connecter le signal
+	melee_hitbox.body_entered.connect(_on_melee_hit_player)
+	
+	# Désactiver par défaut
+	melee_hitbox.monitoring = false
+	melee_hitbox.visible = false
 
 func _physics_process(delta):
 	super._physics_process(delta)
 	
+	# Gérer le cooldown d'attaque mêlée
+	if melee_attack_cooldown > 0:
+		melee_attack_cooldown -= delta
+	
+	# Gérer la durée d'attaque mêlée
+	if is_melee_attacking:
+		melee_attack_duration -= delta
+		if melee_attack_duration <= 0:
+			end_melee_attack()
+	
+	# Gérer le cooldown des attaques spéciales
+	if special_attack_cooldown > 0:
+		special_attack_cooldown -= delta
+	
+	# Comportement selon le type
 	if target and is_instance_valid(target):
 		var distance = global_position.distance_to(target.global_position)
 		
-		# Comportement selon le type d'ennemi
 		match enemy_type:
 			"Grunt":
-				basic_behavior(delta, distance)
+				grunt_behavior(delta, distance)
 			"Shooter":
 				shooter_behavior(delta, distance)
 			"Elite":
 				elite_behavior(delta, distance)
 
-func basic_behavior(_delta, _distance):
-	# Fonce droit vers le joueur pour attaque au corps à corps
+func grunt_behavior(_delta, distance):
+	# Attaquer si assez proche
+	if distance <= melee_range and can_melee_attack():
+		start_melee_attack()
+		return
+	
+	# Sinon se rapprocher
 	var direction = (target.global_position - global_position).normalized()
 	velocity = direction * speed
 	move_and_slide()
@@ -75,32 +117,108 @@ func shooter_behavior(delta, distance):
 	if distance > optimal_distance:
 		# Trop loin - se rapprocher
 		var direction = (target.global_position - global_position).normalized()
-		velocity = direction * speed
+		velocity = direction * speed * 0.8
 		move_and_slide()
 	elif distance < optimal_distance - 50:
 		# Trop proche - reculer
 		var direction = (global_position - target.global_position).normalized()
-		velocity = direction * speed
+		velocity = direction * speed * 0.6
 		move_and_slide()
 	else:
-		# À bonne distance - bouger aléatoirement pour esquiver
+		# À bonne distance - esquiver
 		if dodge_timer >= dodge_cooldown:
 			var random_angle = randf() * TAU
 			dodge_direction = Vector2(cos(random_angle), sin(random_angle))
 			dodge_timer = 0.0
 		
-		velocity = dodge_direction * speed * 0.6
+		velocity = dodge_direction * speed * 0.4
 		move_and_slide()
 	
 	# Tirer si à bonne distance
 	if distance <= optimal_distance + 50 and can_shoot:
 		handle_shooting(delta)
 
+func elite_behavior(delta, distance):
+	# Essayer une attaque spéciale (très rare)
+	if try_special_attack():
+		return
+	
+	# Attaque mêlée si proche
+	if distance <= melee_range + 10 and can_melee_attack():
+		start_melee_attack()
+		return
+	
+	# Se rapprocher
+	if distance > melee_range + 30:
+		var direction = (target.global_position - global_position).normalized()
+		velocity = direction * speed * 0.7
+		move_and_slide()
+	else:
+		velocity = Vector2.ZERO
+	
+	# Tirer à distance moyenne
+	if distance > 100 and distance < 250 and can_shoot and not is_melee_attacking:
+		handle_shooting(delta)
+
+func can_melee_attack() -> bool:
+	return melee_attack_cooldown <= 0 and not is_melee_attacking
+
+func start_melee_attack():
+	if not can_melee_attack():
+		return
+	
+	print(name, " attacks!")
+	
+	is_melee_attacking = true
+	melee_attack_duration = 0.5
+	melee_attack_cooldown = melee_attack_rate
+	
+	# Arrêter le mouvement
+	velocity = Vector2.ZERO
+	
+	# Activer la hitbox
+	melee_hitbox.monitoring = true
+	
+	# Effet visuel
+	show_melee_attack_visual()
+
+func end_melee_attack():
+	if not is_melee_attacking:
+		return
+	
+	is_melee_attacking = false
+	
+	call_deferred("disable_melee_hitbox")
+	
+	hide_melee_attack_visual()
+
+func _on_melee_hit_player(body):
+	if not is_melee_attacking:
+		return
+	
+	if body.is_in_group("players") and body.has_method("take_damage"):
+		# Dégâts selon le type
+		var melee_damage: float
+		match enemy_type:
+			"Elite":
+				melee_damage = damage * 1.2
+			"Grunt":
+				melee_damage = damage
+			"Shooter":
+				melee_damage = damage * 0.8
+			_:
+				melee_damage = damage
+		
+		body.take_damage(melee_damage)
+		print("Melee hit for ", melee_damage, " damage!")
+		
+		# Finir l'attaque après avoir touché
+		end_melee_attack()
 
 func handle_shooting(delta):
-	if not target or projectile_scene_path == "":
+	if not target or projectile_scene_path == "" or is_melee_attacking:
 		return
-		
+	
 	fire_timer += delta
 	
 	if fire_timer >= fire_rate:
@@ -109,7 +227,7 @@ func handle_shooting(delta):
 
 func shoot_at_player():
 	if not ResourceLoader.exists(projectile_scene_path):
-		print("ERROR: Enemy projectile scene not found: ", projectile_scene_path)
+		print("ERROR: Projectile scene not found: ", projectile_scene_path)
 		return
 	
 	var projectile_scene = load(projectile_scene_path)
@@ -117,253 +235,107 @@ func shoot_at_player():
 	
 	get_tree().current_scene.add_child(projectile)
 	
-	# Configurer le projectile comme projectile ennemi
-	projectile.set_owner_type("enemy")
+	# Configuration du projectile
+	if projectile.has_method("set_owner_type"):
+		projectile.set_owner_type("enemy")
 	
-	# Configuration selon le type d'ennemi
-	var projectile_damage = damage * 0.8 if enemy_type == "Shooter" else damage * 0.6
-	projectile.setup(projectile_damage, 250.0, 4.0)
-	
-	# Types de projectiles spéciaux selon l'ennemi
+	# Dégâts équilibrés
+	var projectile_damage: float
 	match enemy_type:
-		"Elite":
-			configure_elite_projectile(projectile)
 		"Shooter":
-			configure_shooter_projectile(projectile)
-		"Grunt":
-			configure_grunt_projectile(projectile)
+			projectile_damage = damage * 0.6
+		"Elite":
+			projectile_damage = damage * 0.5
+		_:
+			projectile_damage = damage * 0.7
+	
+	projectile.setup(projectile_damage, 250.0, 4.0)
 	
 	var direction = (target.global_position - global_position).normalized()
 	var spawn_pos = global_position + direction * 30
 	
 	projectile.launch(spawn_pos, target.global_position)
 
-func configure_elite_projectile(projectile):
-	# Elite tire des projectiles spéciaux selon un pattern
-	var special_attack = randi() % 3
-	
-	match special_attack:
-		0:  # Lightning
-			projectile.set_projectile_type("lightning")
-			projectile.add_status_effect("slow", 2.0, 0.3)
-		1:  # Homing
-			projectile.set_projectile_type("homing") 
-			projectile.homing_strength = 3.0
-		2:  # Fork
-			projectile.set_projectile_type("fork")
-
-func configure_shooter_projectile(projectile):
-	# Shooter tire des projectiles rapides avec poison
-	projectile.set_projectile_type("basic")
-	if randf() < 0.3:  # 30% de chance d'avoir du poison
-		projectile.add_status_effect("poison", 4.0, 3.0)
-
-func configure_grunt_projectile(projectile):
-	# Grunt tire des projectiles basiques
-	projectile.set_projectile_type("basic")
-
-# Méthodes pour attaques spéciales des Elite
-func cast_meteor_rain():
-	if enemy_type != "Elite" or is_casting_special:
-		return
-	
-	print("Elite preparing meteor rain...")
-	start_casting("meteor_rain")
-	
-	# Montrer les zones d'impact AVANT que les météores tombent
-	show_meteor_warnings()
-	
-	# Attendre la fin du cast
-	await get_tree().create_timer(cast_duration).timeout
-	
-	if not is_casting_special:  # Cast interrompu
-		return
-	
-	print("Elite casting meteor rain!")
-	
-	# Maintenant lancer les vrais météores
-	for i in range(3):
-		var meteor_scene = load("res://scenes/projectiles/BasicProjectile.tscn")
-		var meteor = meteor_scene.instantiate()
-		
-		get_tree().current_scene.add_child(meteor)
-		
-		# Configuration météorite
-		meteor.set_owner_type("enemy")
-		meteor.set_projectile_type("meteor")
-		meteor.setup(damage * 1.0, 200.0, 8.0)
-		
-		# Utiliser les positions pré-calculées
-		if i < special_attack_indicators.size():
-			var indicator = special_attack_indicators[i]
-			var sky_position = indicator.global_position + Vector2(0, -400)
-			meteor.launch(sky_position, indicator.global_position)
-		
-		await get_tree().create_timer(0.5).timeout
-	
-	finish_casting() 
-func show_meteor_warnings():
-	# Nettoyer les anciens indicateurs
-	clear_attack_indicators()
-	
-	# Créer 3 zones d'avertissement
-	for i in range(3):
-		var warning = create_warning_indicator("meteor")
-		
-		# Position aléatoire autour du joueur
-		var target_pos = target.global_position
-		var random_offset = Vector2(randf_range(-150, 150), randf_range(-150, 150))
-		warning.global_position = target_pos + random_offset
-		
-		special_attack_indicators.append(warning)
-		get_tree().current_scene.add_child(warning)
-		
-		print("Meteor warning at: ", warning.global_position)
-func cast_lightning_storm():
-	if enemy_type != "Elite":
-		return
-	
-	print("Elite casting lightning storm!")
-	
-	# Créer des éclairs qui frappent autour du joueur
-	for i in range(8):
-		var lightning_scene = load("res://scenes/projectiles/BasicProjectile.tscn")
-		var lightning = lightning_scene.instantiate()
-		
-		get_tree().current_scene.add_child(lightning)
-		
-		# Configuration éclair
-		lightning.set_owner_type("enemy")
-		lightning.set_projectile_type("lightning")
-		lightning.setup(damage, 800.0, 1.0)
-		lightning.add_status_effect("freeze", 1.5, 1.0)
-		
-		# Position en cercle autour du joueur
-		var angle = (i * PI * 2) / 8
-		var circle_pos = target.global_position + Vector2(cos(angle), sin(angle)) * 200
-		
-		lightning.launch(circle_pos, target.global_position)
-		
-		await get_tree().create_timer(0.1).timeout
-
-# Appeler les attaques spéciales avec une chance
 func try_special_attack():
 	if enemy_type != "Elite":
 		return false
 	
-	if randf() < 0.1:  # 10% de chance par frame de physics
-		var special_type = randi() % 2
-		match special_type:
-			0:
-				cast_meteor_rain()
-			1:
-				cast_lightning_storm()
+	# Vérifier le cooldown
+	if special_attack_cooldown > 0:
+		return false
+	
+	# Chance très réduite : 0.2% par frame
+	if randf() < 0.002:
+		cast_simple_special_attack()
+		special_attack_cooldown = special_attack_delay
 		return true
 	
 	return false
 
-# Modifier le comportement Elite pour inclure les attaques spéciales
-func elite_behavior(delta, distance):
-	# Essayer une attaque spéciale
-	if try_special_attack():
-		return  # Pas de mouvement pendant l'attaque spéciale
+func cast_simple_special_attack():
+	print("Elite special attack!")
 	
-	if distance > melee_range + 20:
-		# Se rapprocher pour attaque au corps à corps
-		var direction = (target.global_position - global_position).normalized()
-		velocity = direction * speed
-		move_and_slide()
-	else:
-		# À portée - arrêter de bouger
-		velocity = Vector2.ZERO
-	
-	# Tirer aussi si pas trop proche
-	if distance > 80 and distance < 300 and can_shoot:
-		handle_shooting(delta)
-
-func die():
-	print(name, " died!")
-	
-	if is_elite:
-		GlobalData.total_kills += 3
-	else:
-		GlobalData.add_kill()
-	
-	# Animation de mort selon le type d'ennemi
-	if animation_player:
-		var death_anim = get_death_animation()
-		if animation_player.has_animation(death_anim):
-			animation_player.play(death_anim)
-			await animation_player.animation_finished
-	
-	queue_free()
-
-func get_death_animation() -> String:
-	match enemy_type:
-		"Elite":
-			return "elite_death" if animation_player.has_animation("elite_death") else "death"
-		"Shooter": 
-			return "shooter_death" if animation_player.has_animation("shooter_death") else "death"
-		_:
-			return "death"
-
-# Override pour animations spécifiques aux ennemis
-func update_animation():
-	if not animation_player:
-		return
-	
-	var anim_to_play = ""
-	
-	if is_moving:
-		# Animation de marche selon le type d'ennemi
-		match enemy_type:
-			"Elite":
-				anim_to_play = "elite_walk" if animation_player.has_animation("elite_walk") else "walk"
-			"Shooter":
-				anim_to_play = "shooter_walk" if animation_player.has_animation("shooter_walk") else "walk"
-			"Grunt":
-				anim_to_play = "grunt_walk" if animation_player.has_animation("grunt_walk") else "walk"
-			_:
-				anim_to_play = "walk"
-	else:
-		# Animation idle selon le type d'ennemi
-		match enemy_type:
-			"Elite":
-				anim_to_play = "elite_idle" if animation_player.has_animation("elite_idle") else "idle"
-			"Shooter":
-				anim_to_play = "shooter_idle" if animation_player.has_animation("shooter_idle") else "idle"
-			"Grunt":
-				anim_to_play = "grunt_idle" if animation_player.has_animation("grunt_idle") else "idle"
-			_:
-				anim_to_play = "idle"
-	
-	if animation_player.has_animation(anim_to_play):
-		animation_player.play(anim_to_play)
-	elif is_moving and animation_player.has_animation("walk"):
-		animation_player.play("walk")
-	elif not is_moving and animation_player.has_animation("idle"):
-		animation_player.play("idle")
-
-func _on_hit_player(body):
-	if body.is_in_group("players") and body.has_method("take_damage"):
-		# Dégâts de mêlée plus élevés pour l'élite
-		var melee_damage = damage * 1.5 if is_elite else damage
-		body.take_damage(melee_damage)
-		print(name, " hit player for ", melee_damage, " melee damage!")
+	# Attaque spéciale simple : 3 projectiles en éventail
+	for i in range(3):
+		if not ResourceLoader.exists(projectile_scene_path):
+			continue
 		
-		# Appliquer des effets de statut en mêlée
-		if body.has_method("apply_status_effect"):
-			match enemy_type:
-				"Elite":
-					# Elite applique poison en mêlée
-					body.apply_status_effect("poison", 3.0, 2.0)
-				"Shooter":
-					# Shooter applique ralentissement
-					body.apply_status_effect("slow", 1.5, 0.7)
+		var projectile_scene = load(projectile_scene_path)
+		var projectile = projectile_scene.instantiate()
+		
+		get_tree().current_scene.add_child(projectile)
+		
+		if projectile.has_method("set_owner_type"):
+			projectile.set_owner_type("enemy")
+		
+		projectile.setup(damage * 0.8, 300.0, 5.0)
+		
+		# Direction en éventail
+		var base_direction = (target.global_position - global_position).normalized()
+		var angle_offset = (i - 1) * 0.3  # -0.3, 0, 0.3 radians
+		var direction = base_direction.rotated(angle_offset)
+		
+		var spawn_pos = global_position + direction * 40
+		var target_pos = global_position + direction * 300
+		
+		projectile.launch(spawn_pos, target_pos)
+		
+		await get_tree().create_timer(0.2).timeout
 
-# Méthode pour appliquer les effets de statut aux ennemis
+func show_melee_attack_visual():
+	attack_visual = Sprite2D.new()
+	add_child(attack_visual)
+	
+	# Cercle rouge
+	var image = Image.create(80, 80, false, Image.FORMAT_RGBA8)
+	var center = Vector2(40, 40)
+	
+	for x in range(80):
+		for y in range(80):
+			var distance = Vector2(x, y).distance_to(center)
+			if distance <= 35:
+				var alpha = 0.5 * (1.0 - distance / 35.0)
+				image.set_pixel(x, y, Color(1, 0.2, 0.2, alpha))
+	
+	var texture = ImageTexture.new()
+	texture.set_image(image)
+	attack_visual.texture = texture
+	attack_visual.position = Vector2(-40, -40)
+	
+	# Animation
+	var tween = create_tween()
+	tween.tween_property(attack_visual, "scale", Vector2(1.5, 1.5), 0.3)
+	tween.parallel().tween_property(attack_visual, "modulate:a", 0.0, 0.3)
+
+func hide_melee_attack_visual():
+	if attack_visual and is_instance_valid(attack_visual):
+		attack_visual.queue_free()
+		attack_visual = null
+
+
+# Méthode pour appliquer les effets de statut
 func apply_status_effect(effect_type: String, duration: float, power: float):
-	print("Enemy affected by: ", effect_type, " for ", duration, "s")
+	print("Enemy affected by: ", effect_type)
 	
 	match effect_type:
 		"slow":
@@ -377,11 +349,10 @@ func apply_status_effect(effect_type: String, duration: float, power: float):
 
 func apply_slow_effect(duration: float, power: float):
 	var original_speed = speed
-	speed *= power  # power < 1.0 pour ralentir
+	speed *= power
 	
-	# Effect visuel (optionnel)
 	if sprite:
-		sprite.modulate = Color.BLUE * 1.3
+		sprite.modulate = Color.BLUE * 1.2
 	
 	var timer = Timer.new()
 	add_child(timer)
@@ -389,32 +360,28 @@ func apply_slow_effect(duration: float, power: float):
 	timer.one_shot = true
 	timer.timeout.connect(func(): 
 		speed = original_speed
-		if sprite:
+		if sprite and is_instance_valid(sprite):
 			sprite.modulate = Color.WHITE
 		timer.queue_free()
 	)
 	timer.start()
 
 func apply_poison_effect(duration: float, power: float):
-	# Effet visuel poison
 	if sprite:
-		sprite.modulate = Color.GREEN * 1.3
+		sprite.modulate = Color.GREEN * 1.2
 	
 	var poison_timer = Timer.new()
 	add_child(poison_timer)
-	poison_timer.wait_time = 0.5  # Dégâts toutes les 0.5s
-	poison_timer.timeout.connect(func(): 
-		take_damage(power)
-	)
+	poison_timer.wait_time = 0.5
+	poison_timer.timeout.connect(func(): take_damage(power))
 	poison_timer.start()
 	
-	# Timer pour arrêter le poison
 	var end_timer = Timer.new()
 	add_child(end_timer)
 	end_timer.wait_time = duration
 	end_timer.one_shot = true
 	end_timer.timeout.connect(func():
-		if sprite:
+		if sprite and is_instance_valid(sprite):
 			sprite.modulate = Color.WHITE
 		poison_timer.queue_free()
 		end_timer.queue_free()
@@ -422,19 +389,16 @@ func apply_poison_effect(duration: float, power: float):
 	end_timer.start()
 
 func apply_burn_effect(duration: float, power: float):
-	# Effet visuel brûlure
 	if sprite:
-		sprite.modulate = Color.RED * 1.5
-	
+		sprite.modulate = Color.RED * 1.3
 	apply_poison_effect(duration, power)
 
 func apply_freeze_effect(duration: float):
 	var original_speed = speed
 	speed = 0
 	
-	# Effet visuel gel
 	if sprite:
-		sprite.modulate = Color.LIGHT_BLUE * 1.5
+		sprite.modulate = Color.LIGHT_BLUE * 1.3
 	
 	var timer = Timer.new()
 	add_child(timer)
@@ -442,8 +406,92 @@ func apply_freeze_effect(duration: float):
 	timer.one_shot = true
 	timer.timeout.connect(func(): 
 		speed = original_speed
-		if sprite:
+		if sprite and is_instance_valid(sprite):
 			sprite.modulate = Color.WHITE
 		timer.queue_free()
 	)
 	timer.start()
+
+func update_animation():
+	if not animation_player:
+		return
+	
+	var anim_to_play = ""
+	
+	if is_moving:
+		anim_to_play = "walk"
+	else:
+		anim_to_play = "idle"
+	
+	if animation_player.has_animation(anim_to_play):
+		animation_player.play(anim_to_play)
+	elif is_moving and animation_player.has_animation("walk"):
+		animation_player.play("walk")
+	elif not is_moving and animation_player.has_animation("idle"):
+		animation_player.play("idle")
+func die():
+	print(name, " died!")
+	
+	# Stocker les infos AVANT queue_free()
+	var death_type = enemy_type
+	var death_position = global_position
+	
+	# Signal immédiat
+	if GlobalData.has_signal("enemy_killed"):
+		GlobalData.enemy_killed.emit(death_type, death_position)
+	
+	# Système direct
+	var drop_system = get_tree().get_first_node_in_group("drop_system")
+	if drop_system and drop_system.has_method("_on_enemy_killed"):
+		drop_system._on_enemy_killed(death_type, death_position)
+	
+	# Stats
+	if is_elite:
+		GlobalData.total_kills += 3
+	else:
+		GlobalData.add_kill()
+	
+	queue_free()
+func signal_enemy_death_deferred():
+	# Trouver le système de drops
+	var drop_system = get_tree().get_first_node_in_group("drop_system")
+	if drop_system and drop_system.has_method("_on_enemy_killed"):
+		drop_system._on_enemy_killed(enemy_type, global_position)
+		print("Death signaled to drop system: ", enemy_type)
+	else:
+		print("Drop system not found!")
+func configure_enemy_deferred(enemy_type_data: Dictionary):
+	if not is_instance_valid(self):
+		return
+	
+	max_health = enemy_type_data.health
+	current_health = enemy_type_data.health
+	speed = enemy_type_data.speed
+	damage = enemy_type_data.damage
+	can_shoot = enemy_type_data.get("can_shoot", false)
+	is_elite = (enemy_type_data.name == "Elite")
+	enemy_type = enemy_type_data.name
+	
+	if can_shoot:
+		projectile_scene_path = enemy_type_data.get("projectile_path", "")
+		
+		match enemy_type:
+			"Shooter":
+				fire_rate = 3.5
+				optimal_distance = 180.0
+			"Elite":
+				fire_rate = 4.0
+	
+	update_health_bar()
+# NOUVELLE MÉTHODE : Signaler la mort pour drops
+func signal_enemy_death():
+	# Trouver le système de drops
+	var drop_system = get_tree().get_first_node_in_group("drop_system")
+	if drop_system and drop_system.has_method("_on_enemy_killed"):
+		drop_system._on_enemy_killed(enemy_type, global_position)
+	
+	# Ou utiliser un signal global si configuré
+	if GlobalData.has_signal("enemy_killed"):
+		GlobalData.enemy_killed.emit(enemy_type, global_position)
+	
+	print("Enemy death signaled: ", enemy_type, " at ", global_position)

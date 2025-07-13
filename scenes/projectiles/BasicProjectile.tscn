@@ -69,4 +69,4 @@ shape = SubResource("CapsuleShape2D_5v1oq")
 libraries = {
 &"": SubResource("AnimationLibrary_dxnhx")
 }
-autoplay = "new_animation"
+autoplay = "RESET"

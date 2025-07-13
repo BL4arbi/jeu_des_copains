@@ -1,3 +1,4 @@
+# BaseCharacter.gd - Version corrigée
 extends CharacterBody2D
 class_name BaseCharacter
 
@@ -11,7 +12,7 @@ var damage: float = 20.0
 var is_moving: bool = false
 var last_direction: Vector2 = Vector2.RIGHT
 
-# Composants (à ajouter quand la scène sera créée)
+# Composants
 @onready var sprite: Sprite2D = $Sprite2D
 @onready var collision: CollisionShape2D = $CollisionShape2D
 @onready var animation_player: AnimationPlayer = get_node_or_null("AnimationPlayer")
@@ -29,9 +30,6 @@ func _ready():
 		current_health = max_health
 		speed = data.get("speed", 200)
 		damage = data.get("damage", 20)
-	
-	# Connecter les signaux
-	health_changed.connect(_on_health_changed)
 	
 	# Initialiser la health bar
 	update_health_bar()
@@ -93,15 +91,20 @@ func flash_damage():
 		var tween = create_tween()
 		tween.tween_property(sprite, "modulate", Color.WHITE, 0.2)
 
-func _on_health_changed(new_health: float, new_max_health: float):
-	update_health_bar()
-
 func update_health_bar():
 	if health_bar:
 		var health_percent = (current_health / max_health) * 100 if max_health > 0 else 0
 		health_bar.value = health_percent
 		
-		# Masquer la barre si vie pleine
+		# Couleur selon la vie
+		if health_percent > 60:
+			health_bar.modulate = Color.GREEN
+		elif health_percent > 30:
+			health_bar.modulate = Color.YELLOW
+		else:
+			health_bar.modulate = Color.RED
+		
+		# Masquer si vie pleine
 		health_bar.visible = current_health < max_health
 
 func die():
