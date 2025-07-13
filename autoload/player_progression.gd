@@ -1,145 +1,196 @@
-# GlobalData.gd - Version corrigée sans erreur
+# PlayerProgressionSystem.gd - Version équilibrée avec progression réduite
 extends Node
+class_name PlayerProgressionSystem
 
-var selected_character_id: int = 0
-var current_level: int = 1
-var total_kills: int = 0
-var player_stats: Dictionary = {}
-var characters_data: Array = []
+# STATS RÉDUITES - Progression plus lente
+var stats_per_kill: Dictionary = {
+	"damage": 0.2,      # RÉDUIT de 0.5 à 0.2
+	"health": 1.0,      # RÉDUIT de 2.0 à 1.0
+	"speed": 0.5,       # RÉDUIT de 1.0 à 0.5
+	"fire_rate": 0.001  # RÉDUIT de 0.002 à 0.001
+}
 
-# NOUVEAU : Statistiques détaillées
-var elite_kills: int = 0
-var boss_kills: int = 0
-var damage_dealt: float = 0.0
-var damage_taken: float = 0.0
-var time_survived: float = 0.0
+# PALIERS PLUS ESPACÉS ET BONUS RÉDUITS
+var special_thresholds: Dictionary = {
+	20: {"damage": 3, "description": "Premier Sang"},          # 10 -> 20
+	50: {"health": 15, "description": "Survivant"},            # 25 -> 50, bonus réduit
+	100: {"speed": 15, "description": "Véloce"},               # 50 -> 100
+	200: {"damage": 5, "health": 25, "description": "Tueur Expérimenté"},  # 100 -> 200
+	400: {"damage": 8, "speed": 20, "description": "Machine de Guerre"},   # 200 -> 400
+	800: {"damage": 12, "health": 50, "speed": 30, "description": "Légende Vivante"}  # 500 -> 800
+}
 
-# Signaux
-signal kill_count_updated(new_count: int)
-signal enemy_killed(enemy_type: String, position: Vector2)
-signal elite_killed(position: Vector2)
-signal boss_killed(position: Vector2)
+var player_ref: Player = null
+var last_kill_count: int = 0
 
 func _ready():
-	load_characters_data()
-
-func load_characters_data():
-	characters_data = [
-		{
-			"id": 0,
-			"name": "Guerrier",
-			"health": 120,
-			"speed": 200,
-			"damage": 25,
-			"sprite_path": "res://assets/SPRITES/character/fantome festif.png",
-			"description": "Personnage équilibré avec bonus de survie"
-		},
-		{
-			"id": 1,
-			"name": "Archer",
-			"health": 80,
-			"speed": 280,
-			"damage": 30,
-			"sprite_path": "res://assets/tiles/TOP_DOWN_PLAYER_NEW.png",
-			"description": "Rapide mais fragile - bonus de vitesse"
-		},
-		{
-			"id": 2,
-			"name": "Mage",
-			"health": 70,
-			"speed": 150,
-			"damage": 40,
-			"sprite_path": "res://assets/SPRITES/character/VAISSEAU 1.png",
-			"description": "Lent mais puissant - bonus de dégâts"
-		}
-	]
-
-func select_character(character_id: int):
-	selected_character_id = character_id
-	player_stats = characters_data[character_id].duplicate()
+	add_to_group("progression_system")
 	
-	# CORRECTION : Vérifier si PlayerProgression existe AVANT de l'utiliser
-	await get_tree().process_frame  # Attendre une frame pour que tous les autoloads soient prêts
+	# Trouver le joueur
+	player_ref = get_tree().get_first_node_in_group("players")
 	
-	if has_node("/root/PlayerProgression"):
-		var progression = get_node("/root/PlayerProgression")
-		if progression.has_method("get_current_stats"):
-			var current_stats = progression.get_current_stats()
-			player_stats.health = current_stats.health
-			player_stats.speed = current_stats.speed
-			player_stats.damage = current_stats.damage
-			print("✅ Progression stats applied to character")
-		else:
-			print("⚠️ PlayerProgression exists but missing get_current_stats method")
-	else:
-		print("⚠️ PlayerProgression not found, using base character stats")
-
-func add_kill(enemy_type: String = "basic"):
-	total_kills += 1
+	# Connecter au signal de kills
+	if GlobalData.has_signal("kill_count_updated"):
+		GlobalData.kill_count_updated.connect(_on_kill_count_updated)
 	
-	# Compter les types spéciaux
-	match enemy_type:
-		"Elite":
-			elite_kills += 1
-			elite_killed.emit(Vector2.ZERO)
-		"Boss":
-			boss_kills += 1
-			boss_killed.emit(Vector2.ZERO)
+	print("📈 Player progression system initialized (BALANCED)")
+
+func _on_kill_count_updated(new_count: int):
+	if new_count > last_kill_count:
+		var kills_gained = new_count - last_kill_count
+		
+		for i in range(kills_gained):
+			apply_kill_progression(last_kill_count + i + 1)
+		
+		last_kill_count = new_count
+
+func apply_kill_progression(current_kills: int):
+	if not player_ref:
+		return
 	
-	kill_count_updated.emit(total_kills)
-	print("📊 Total kills: ", total_kills, " (Elite: ", elite_kills, ", Boss: ", boss_kills, ")")
+	# Augmentation des stats de base (RÉDUITES)
+	player_ref.base_damage += stats_per_kill.damage
+	player_ref.damage += stats_per_kill.damage
+	
+	player_ref.max_health += stats_per_kill.health
+	player_ref.current_health += stats_per_kill.health  # Bonus heal
+	
+	player_ref.base_speed += stats_per_kill.speed
+	player_ref.speed += stats_per_kill.speed
+	
+	# SEULEMENT TOUS LES 5 KILLS pour réduire le spam
+	if current_kills % 5 == 0:
+		print("📈 Kill ", current_kills, ": +", stats_per_kill.damage, " DMG, +", stats_per_kill.health, " HP, +", stats_per_kill.speed, " SPD")
+	
+	# Vérifier les paliers spéciaux
+	if special_thresholds.has(current_kills):
+		apply_special_threshold(current_kills, special_thresholds[current_kills])
+	
+	# Effet visuel moins fréquent
+	if current_kills % 10 == 0:  # Seulement tous les 10 kills
+		create_progression_effect()
 
-func add_damage_dealt(amount: float):
-	damage_dealt += amount
+func apply_special_threshold(kills: int, bonus: Dictionary):
+	if not player_ref:
+		return
+	
+	print("🌟 PALIER SPÉCIAL ATTEINT: ", kills, " kills - ", bonus.description)
+	
+	# Appliquer les bonus spéciaux
+	if bonus.has("damage"):
+		player_ref.base_damage += bonus.damage
+		player_ref.damage += bonus.damage
+	
+	if bonus.has("health"):
+		player_ref.max_health += bonus.health
+		player_ref.current_health += bonus.health
+	
+	if bonus.has("speed"):
+		player_ref.base_speed += bonus.speed
+		player_ref.speed += bonus.speed
+	
+	# Notification spéciale
+	show_special_threshold_notification(bonus.description, bonus)
 
-func add_damage_taken(amount: float):
-	damage_taken += amount
+func show_special_threshold_notification(title: String, bonus: Dictionary):
+	var notification = Label.new()
+	notification.text = "🌟 " + title + " 🌟"
+	
+	# Ajouter les détails du bonus
+	var bonus_text = "\n"
+	if bonus.has("damage"):
+		bonus_text += "+" + str(bonus.damage) + " DÉGÂTS "
+	if bonus.has("health"):
+		bonus_text += "+" + str(bonus.health) + " VIE "
+	if bonus.has("speed"):
+		bonus_text += "+" + str(bonus.speed) + " VITESSE "
+	
+	notification.text += bonus_text
+	notification.position = Vector2(350, 250)
+	notification.add_theme_font_size_override("font_size", 24)
+	notification.add_theme_color_override("font_color", Color.GOLD)
+	
+	get_tree().current_scene.add_child(notification)
+	
+	# Animation spéciale
+	var tween = create_tween()
+	tween.tween_property(notification, "scale", Vector2(1.3, 1.3), 0.8)
+	tween.tween_property(notification, "scale", Vector2(1.0, 1.0), 0.8)
+	
+	# Timer pour disparition
+	var timer = Timer.new()
+	notification.add_child(timer)
+	timer.wait_time = 4.0
+	timer.one_shot = true
+	timer.timeout.connect(func():
+		var fade_tween = create_tween()
+		fade_tween.tween_property(notification, "modulate:a", 0.0, 1.5)
+		fade_tween.tween_callback(func(): notification.queue_free())
+	)
+	timer.start()
 
-func add_survival_time(time: float):
-	time_survived += time
+func create_progression_effect():
+	if not player_ref:
+		return
+	
+	# Effet visuel de montée en niveau
+	var effect = Sprite2D.new()
+	get_tree().current_scene.add_child(effect)
+	
+	# Créer un effet doré
+	var effect_size = 64
+	var image = Image.create(effect_size, effect_size, false, Image.FORMAT_RGBA8)
+	var center = Vector2(effect_size / 2, effect_size / 2)
+	
+	for x in range(effect_size):
+		for y in range(effect_size):
+			var distance = Vector2(x, y).distance_to(center)
+			if distance <= effect_size / 2:
+				var alpha = 1.0 - (distance / (effect_size / 2))
+				image.set_pixel(x, y, Color(1.0, 0.8, 0.0, alpha * 0.7))  # Doré
+	
+	var texture = ImageTexture.new()
+	texture.set_image(image)
+	effect.texture = texture
+	effect.global_position = player_ref.global_position - Vector2(effect_size / 2, effect_size / 2)
+	
+	# Animation de l'effet
+	var tween = create_tween()
+	tween.parallel().tween_property(effect, "scale", Vector2(2, 2), 0.6)
+	tween.parallel().tween_property(effect, "modulate:a", 0.0, 0.6)
+	tween.tween_callback(func(): effect.queue_free())
 
-func get_character_data(character_id: int) -> Dictionary:
-	if character_id < characters_data.size():
-		return characters_data[character_id]
-	return {}
-
-# NOUVEAU : Méthodes pour les statistiques
-func get_kill_statistics() -> Dictionary:
-	return {
-		"total_kills": total_kills,
-		"elite_kills": elite_kills,
-		"boss_kills": boss_kills,
-		"damage_dealt": damage_dealt,
-		"damage_taken": damage_taken,
-		"time_survived": time_survived,
-		"kills_per_minute": (total_kills / max(time_survived / 60.0, 0.1)),
-		"damage_per_kill": (damage_dealt / max(total_kills, 1))
+# Méthodes utilitaires
+func get_total_stats_gained() -> Dictionary:
+	var kills = GlobalData.total_kills
+	var total_stats = {
+		"damage": kills * stats_per_kill.damage,
+		"health": kills * stats_per_kill.health,
+		"speed": kills * stats_per_kill.speed
 	}
-
-func reset_progression():
-	total_kills = 0
-	elite_kills = 0
-	boss_kills = 0
-	damage_dealt = 0.0
-	damage_taken = 0.0
-	time_survived = 0.0
 	
-	print("🔄 Progression reset")
-
-# Sauvegarde simple (à améliorer plus tard)
-func save_progress():
-	var save_data = {
-		"total_kills": total_kills,
-		"elite_kills": elite_kills,
-		"boss_kills": boss_kills,
-		"damage_dealt": damage_dealt,
-		"damage_taken": damage_taken,
-		"time_survived": time_survived
-	}
+	# Ajouter les bonus des paliers
+	for threshold in special_thresholds.keys():
+		if kills >= threshold:
+			var bonus = special_thresholds[threshold]
+			if bonus.has("damage"):
+				total_stats.damage += bonus.damage
+			if bonus.has("health"):
+				total_stats.health += bonus.health
+			if bonus.has("speed"):
+				total_stats.speed += bonus.speed
 	
-	# TODO: Implémenter vraie sauvegarde
-	print("💾 Progress saved: ", save_data)
+	return total_stats
 
-func load_progress():
-	# TODO: Implémenter vraie sauvegarde
-	print("📁 Progress loaded")
+func get_next_threshold() -> Dictionary:
+	var kills = GlobalData.total_kills
+	
+	for threshold in special_thresholds.keys():
+		if kills < threshold:
+			return {
+				"kills_needed": threshold,
+				"kills_remaining": threshold - kills,
+				"bonus": special_thresholds[threshold]
+			}
+	
+	return {"kills_needed": -1}  # Pas de prochain palier

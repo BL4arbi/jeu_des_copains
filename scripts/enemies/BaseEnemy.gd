@@ -60,7 +60,7 @@ func configure_enemy_deferred(enemy_data: Dictionary):
 	
 	# Configuration de base
 	enemy_type = enemy_data.name
-	base_health = enemy_data.health
+	base_health = enemy_data.health * 1.3
 	base_damage = enemy_data.damage
 	speed = enemy_data.speed
 	can_shoot = enemy_data.get("can_shoot", false)
@@ -115,7 +115,7 @@ func configure_shooting_stats():
 			optimal_distance = 160.0
 		"Elite":
 			fire_rate = 2.5
-			special_attack_delay = 12.0
+			special_attack_delay = 10.0
 
 func setup_armor_visual():
 	if armor <= 0.1 or not is_instance_valid(self):

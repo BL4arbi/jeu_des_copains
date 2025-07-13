@@ -5,7 +5,7 @@ class_name Player
 var weapons: Array[ProjectileData] = []
 var current_weapon: int = 0
 var fire_timer: float = 0.0 
-
+signal weapon_replacement_requested(new_weapon: ProjectileData)
 # Variables de respawn
 var is_dead: bool = false
 var respawn_time: float = 3.0

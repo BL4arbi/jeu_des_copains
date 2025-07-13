@@ -1,4 +1,4 @@
-# TestLevel.gd - Version complète avec tous les systèmes intégrés
+# TestLevel.gd - Version corrigée avec connexion des systèmes
 extends Node2D
 
 # Références aux éléments de la scène
@@ -11,6 +11,7 @@ extends Node2D
 # Systèmes du jeu
 var drop_system: EnemyDropSystem
 var buff_system: BuffSystem
+var progression_system: PlayerProgressionSystem
 
 # Timer de nettoyage local
 var local_cleanup_timer: Timer
@@ -51,17 +52,44 @@ func setup_game_systems():
 	add_child(buff_system)
 	buff_system.add_to_group("buff_system")
 	
+	# === SYSTÈME DE PROGRESSION ===
+	progression_system = PlayerProgressionSystem.new()
+	progression_system.name = "ProgressionSystem"
+	add_child(progression_system)
+	progression_system.add_to_group("progression_system")
+	
 	print("✅ Drop system created")
 	print("⭐ Buff system created")
+	print("📈 Progression system created")
 
 func setup_signals():
 	# Connecter le signal de kill count
 	if GlobalData.has_signal("kill_count_updated"):
 		GlobalData.kill_count_updated.connect(_on_kill_count_updated)
 	
+	# CORRECTION : Connecter le signal enemy_killed pour les buffs
+	if GlobalData.has_signal("enemy_killed"):
+		GlobalData.enemy_killed.connect(_on_enemy_killed)
+		print("✅ Enemy killed signal connected for buffs")
+	else:
+		print("❌ WARNING: enemy_killed signal not found in GlobalData!")
+	
 	# Connecter le signal de santé du joueur
 	if player and player.has_signal("health_changed"):
 		player.health_changed.connect(_on_player_health_changed)
+
+# NOUVELLE MÉTHODE : Relayer les morts d'ennemis aux systèmes
+func _on_enemy_killed(enemy_type: String, enemy_position: Vector2):
+	print("📢 Enemy killed relayed: ", enemy_type, " at ", enemy_position)
+	
+	# Notifier le système de drops
+	if drop_system and drop_system.has_method("_on_enemy_killed"):
+		drop_system._on_enemy_killed(enemy_type, enemy_position)
+	
+	# CORRECTION : Notifier le système de buffs
+	if buff_system and buff_system.has_method("_on_enemy_killed"):
+		buff_system._on_enemy_killed(enemy_type, enemy_position)
+		print("⭐ Buff system notified of enemy death")
 
 func _on_kill_count_updated(new_count: int):
 	if kill_counter:
@@ -83,6 +111,7 @@ func setup_local_cleanup():
 
 func _local_cleanup():
 	cleanup_level_sprites()
+
 func cleanup_level_sprites():
 	var sprites_removed = 0
 	
@@ -103,20 +132,12 @@ func cleanup_level_sprites():
 		
 		# Pickups corrompus
 		elif child is WeaponPickup:
-			# CORRECTION : Vérifier les propriétés correctement
 			var should_remove = false
 			
-			# Vérifier si le sprite du pickup existe
 			if not is_instance_valid(child.sprite):
 				should_remove = true
 				print("🧹 Pickup has invalid sprite")
 			
-			# Vérifier la propriété is_being_destroyed s'elle existe
-			if child.has_method("get") and child.get("is_being_destroyed") == true:
-				should_remove = true
-				print("🧹 Pickup is being destroyed")
-			
-			# Alternative plus sûre : vérifier directement la variable
 			if "is_being_destroyed" in child and child.is_being_destroyed:
 				should_remove = true
 				print("🧹 Pickup marked for destruction")
@@ -129,26 +150,23 @@ func cleanup_level_sprites():
 				child.queue_free()
 				sprites_removed += 1
 		
-		# NOUVEAU : Nettoyer les Area2D orphelines (projectiles morts)
+		# Nettoyer les Area2D orphelines (projectiles morts)
 		elif child is Area2D and not child is WeaponPickup:
-			# Vérifier si c'est un projectile mort
 			if not child.has_method("_physics_process") or not is_instance_valid(child.get_parent()):
 				print("🧹 Removing orphaned Area2D: ", child.name)
 				child.queue_free()
 				sprites_removed += 1
 		
-		# NOUVEAU : Nettoyer les timers orphelins
+		# Nettoyer les timers orphelins
 		elif child is Timer:
-			# Vérifier si le timer a un parent valide
 			var timer_parent = child.get_parent()
 			if not is_instance_valid(timer_parent) or timer_parent == self:
 				print("🧹 Removing orphaned timer: ", child.name)
 				child.queue_free()
 				sprites_removed += 1
 		
-		# NOUVEAU : Nettoyer les labels temporaires
+		# Nettoyer les labels temporaires
 		elif child is Label:
-			# Labels de dégâts qui traînent
 			if child.name.begins_with("damage_") or child.position.y < -100:
 				print("🧹 Removing temporary label: ", child.name)
 				child.queue_free()
@@ -157,7 +175,6 @@ func cleanup_level_sprites():
 	if sprites_removed > 0:
 		print("🧹 Level cleanup: ", sprites_removed, " objects removed")
 
-# NOUVELLE MÉTHODE : Nettoyage plus agressif si nécessaire
 func force_cleanup_all():
 	print("🧹 FORCE CLEANUP ACTIVATED!")
 	
@@ -171,15 +188,12 @@ func force_cleanup_all():
 		# Garder seulement les éléments essentiels
 		var is_essential = false
 		
-		# Liste des éléments à garder
-		if child.name in ["Player", "CanvasLayer", "TileMapLayer", "WeaponSpawner", "EnemySpawner", "DropSystem"]:
+		if child.name in ["Player", "CanvasLayer", "TileMapLayer", "WeaponSpawner", "EnemySpawner", "DropSystem", "BuffSystem", "ProgressionSystem"]:
 			is_essential = true
 		
-		# Garder les éléments avec des groupes importants
 		if child.is_in_group("players") or child.is_in_group("essential"):
 			is_essential = true
 		
-		# Supprimer tout le reste
 		if not is_essential:
 			print("🧹 Force removing: ", child.name, " (", child.get_class(), ")")
 			child.queue_free()
@@ -187,37 +201,17 @@ func force_cleanup_all():
 	
 	print("🧹 Force cleanup removed ", total_removed, " objects")
 
-# AMÉLIORATION : Nettoyage automatique plus intelligent
-func _on_timer_automatic_cleanup():
-	# Nettoyage automatique toutes les 10 secondes
-	var enemy_count = get_tree().get_nodes_in_group("enemies").size()
-	var pickup_count = get_tree().get_nodes_in_group("weapon_pickups").size()
-	
-	# Si trop d'objets, faire un nettoyage
-	if enemy_count > 30 or pickup_count > 10:
-		print("🧹 Too many objects detected, cleaning up...")
-		cleanup_level_sprites()
-	
-	# Si vraiment trop d'objets, nettoyage forcé
-	if get_child_count() > 100:
-		print("🧹 Object count critical (", get_child_count(), "), force cleanup!")
-		force_cleanup_all()
-
-# Améliorer la méthode _input existante
 func _input(event):
 	# Nettoyage manuel avec C
 	if Input.is_action_just_pressed("clear"):
 		print("🧹 Manual cleanup triggered from TestLevel!")
 		
-		# Nettoyage progressif
 		cleanup_level_sprites()
 		
-		# Si Shift+C, nettoyage forcé
 		if Input.is_key_pressed(KEY_SHIFT):
 			print("🧹 SHIFT+C detected - FORCE CLEANUP!")
 			force_cleanup_all()
 		
-		# Nettoyage global si le CleanupManager existe
 		if has_node("/root/WeaponCleanupManager"):
 			var cleanup_manager = get_node("/root/WeaponCleanupManager")
 			if cleanup_manager.has_method("force_cleanup"):
@@ -234,8 +228,6 @@ func _input(event):
 	# Test: Echap pour retourner à la sélection
 	if Input.is_action_pressed("ui_cancel"):
 		get_tree().change_scene_to_file("res://scenes/ui/CharacterSelection.tscn")
-
-
 
 func center_player():
 	var viewport_size = get_viewport().get_visible_rect().size
@@ -307,46 +299,6 @@ func update_hud():
 		var health_percent = (player.current_health / player.max_health) * 100
 		health_bar.value = health_percent
 
-
-
-func show_active_buffs_debug():
-	if not buff_system:
-		print("No buff system found!")
-		return
-	
-	var active_buffs = buff_system.get_active_buffs()
-	print("=== ACTIVE BUFFS DEBUG ===")
-	print("Total active buffs: ", active_buffs.size())
-	
-	for buff in active_buffs:
-		print("- ", buff.name, " (", buff.remaining_time, "s remaining)")
-	
-	if player:
-		print("=== PLAYER METAS ===")
-		var metas = [
-			"damage_boost", "fire_rate_boost", "damage_reduction", 
-			"lifesteal", "extra_projectiles", "chain_lightning_chance",
-			"penetration_bonus", "poison_damage", "fire_damage_percent"
-		]
-		
-		for meta in metas:
-			if player.has_meta(meta):
-				print("- ", meta, ": ", player.get_meta(meta))
-
-# === NOUVELLES MÉTHODES POUR LA COMMUNICATION ENTRE SYSTÈMES ===
-func _on_enemy_died(enemy_type: String, enemy_position: Vector2):
-	# Cette méthode sera appelée par BaseEnemy.die()
-	print("📢 Enemy died notification: ", enemy_type, " at ", enemy_position)
-	
-	# Notifier le système de drops
-	if drop_system and drop_system.has_method("_on_enemy_killed"):
-		drop_system._on_enemy_killed(enemy_type, enemy_position)
-	
-	# Notifier le système de buffs
-	if buff_system and buff_system.has_method("_on_enemy_killed"):
-		buff_system._on_enemy_killed(enemy_type, enemy_position)
-
-# Méthodes de debug et statistiques
 func get_game_stats() -> Dictionary:
 	var stats = {
 		"player_health": player.current_health if player else 0,
