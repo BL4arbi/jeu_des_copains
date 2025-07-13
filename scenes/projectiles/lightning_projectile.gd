@@ -1,8 +1,8 @@
-# LightningProjectile.gd - Version modulaire avec variables configurables
+# LightningProjectile.gd - Version corrigée qui cible automatiquement les ennemis
 extends BaseProjectile
 class_name LightningProjectile
 
-# === VARIABLES CONFIGURABLES (pour futurs accessoires) ===
+# === VARIABLES CONFIGURABLES ===
 var max_targets: int = 3              # Nombre max d'ennemis touchés
 var strike_radius: float = 80.0       # Rayon de frappe de chaque éclair
 var chain_range: float = 120.0        # Distance de chaînage entre cibles
@@ -25,8 +25,8 @@ func setup_lightning_behavior():
 	speed = 0  # La foudre ne bouge pas
 	lifetime = 4.0
 	
-	# Trouver les cibles autour du joueur
-	find_lightning_targets()
+	# CORRECTION : Chercher les ennemis automatiquement
+	find_lightning_targets_automatically()
 	
 	# Créer les avertissements
 	create_warning_indicators()
@@ -41,38 +41,42 @@ func setup_lightning_behavior():
 	
 	print("⚡ Lightning preparing to strike ", target_positions.size(), " targets")
 
-func find_lightning_targets():
+func find_lightning_targets_automatically():
+	# CORRECTION : Chercher automatiquement les ennemis les plus proches
 	var target_group = "enemies" if owner_type == "player" else "players"
 	var potential_targets = get_tree().get_nodes_in_group(target_group)
 	
-	# Calculer le nombre effectif de cibles (avec multiplicateur)
+	# Calculer le nombre effectif de cibles
 	var effective_max_targets = int(max_targets * target_multiplier)
 	
-	# Trier par distance au joueur/lanceur
+	# Utiliser la position du joueur comme centre de recherche
+	var search_center = global_position
 	var launcher = get_tree().get_first_node_in_group("players") if owner_type == "player" else null
-	if not launcher:
-		launcher = get_tree().get_first_node_in_group("enemies")
+	if launcher:
+		search_center = launcher.global_position
 	
-	if not launcher:
-		return
-	
-	# Filtrer et trier les cibles
+	# Filtrer et trier les cibles par distance
 	var valid_targets = []
-	var effective_range = chain_range * range_multiplier
+	var effective_range = chain_range * range_multiplier * 2  # Range plus grande pour trouver des cibles
 	
 	for target in potential_targets:
-		var distance = launcher.global_position.distance_to(target.global_position)
+		var distance = search_center.distance_to(target.global_position)
 		if distance <= effective_range:
-			valid_targets.append({"target": target, "distance": distance})
+			valid_targets.append({
+				"target": target, 
+				"distance": distance,
+				"position": target.global_position
+			})
 	
 	# Trier par distance (plus proches en premier)
 	valid_targets.sort_custom(func(a, b): return a.distance < b.distance)
 	
 	# Prendre les N plus proches
+	target_positions.clear()
 	for i in range(min(effective_max_targets, valid_targets.size())):
-		target_positions.append(valid_targets[i].target.global_position)
+		target_positions.append(valid_targets[i].position)
 	
-	print("Found ", target_positions.size(), " lightning targets")
+	print("⚡ Found ", target_positions.size(), " lightning targets automatically")
 
 func create_warning_indicators():
 	clear_warnings()
@@ -109,8 +113,8 @@ func create_warning_circle(position: Vector2) -> Sprite2D:
 	warning.texture = texture
 	warning.global_position = position - Vector2(effective_radius, effective_radius)
 	
-	# Animation clignotante plus rapide si temps court
-	var blink_speed = 0.3 / warning_time  # S'adapte au temps d'avertissement
+	# Animation clignotante
+	var blink_speed = 0.3 / warning_time
 	var tween = create_tween()
 	tween.set_loops()
 	tween.tween_property(warning, "modulate:a", 0.3, blink_speed)
@@ -142,6 +146,7 @@ func strike_at_position(strike_pos: Vector2):
 	var target_group = "enemies" if owner_type == "player" else "players"
 	var all_targets = get_tree().get_nodes_in_group(target_group)
 	
+	var targets_hit = 0
 	for target in all_targets:
 		var distance = strike_pos.distance_to(target.global_position)
 		if distance <= effective_radius:
@@ -156,9 +161,12 @@ func strike_at_position(strike_pos: Vector2):
 					target.apply_status_effect("freeze", paralysis_duration, 1.0)
 				
 				print("⚡ Lightning hit ", target.name, " for ", final_damage, " damage")
+				targets_hit += 1
 	
 	# Effet visuel d'éclair
 	create_lightning_effect(strike_pos)
+	
+	print("⚡ Strike at ", strike_pos, " hit ", targets_hit, " targets")
 
 func create_lightning_effect(position: Vector2):
 	var effect = Sprite2D.new()
@@ -170,7 +178,16 @@ func create_lightning_effect(position: Vector2):
 	
 	# Couleur selon le propriétaire
 	var effect_color = Color.YELLOW if owner_type == "player" else Color.PURPLE
-	image.fill(effect_color)
+	
+	# Créer un effet d'éclair (lignes aléatoires)
+	var center = Vector2(effect_size / 2, effect_size / 2)
+	for i in range(20):  # 20 éclairs
+		var angle = randf() * TAU
+		var length = randf() * (effect_size / 2)
+		var end_pos = center + Vector2(cos(angle), sin(angle)) * length
+		
+		# Dessiner une ligne d'éclair
+		draw_lightning_line(image, center, end_pos, effect_color)
 	
 	var texture = ImageTexture.new()
 	texture.set_image(image)
@@ -183,6 +200,26 @@ func create_lightning_effect(position: Vector2):
 	tween.parallel().tween_property(effect, "modulate:a", 0.0, 0.4)
 	tween.tween_callback(func(): effect.queue_free())
 
+func draw_lightning_line(image: Image, start: Vector2, end: Vector2, color: Color):
+	# Dessiner une ligne simple entre deux points
+	var distance = start.distance_to(end)
+	var steps = int(distance)
+	
+	for i in range(steps):
+		var t = float(i) / float(steps)
+		var pos = start.lerp(end, t)
+		
+		# Ajouter de la variation pour l'effet éclair
+		var noise_x = randf_range(-2, 2)
+		var noise_y = randf_range(-2, 2)
+		pos += Vector2(noise_x, noise_y)
+		
+		var x = int(pos.x)
+		var y = int(pos.y)
+		
+		if x >= 0 and x < image.get_width() and y >= 0 and y < image.get_height():
+			image.set_pixel(x, y, color)
+
 func clear_warnings():
 	for warning in warning_indicators:
 		if is_instance_valid(warning):
@@ -191,13 +228,6 @@ func clear_warnings():
 
 # === MÉTHODES POUR FUTURS ACCESSOIRES ===
 func apply_accessory_modifiers(modifiers: Dictionary):
-	# Exemple d'utilisation future :
-	# lightning.apply_accessory_modifiers({
-	#   "max_targets_bonus": 2,
-	#   "damage_multiplier": 1.5,
-	#   "range_multiplier": 1.3
-	# })
-	
 	if modifiers.has("max_targets_bonus"):
 		max_targets += modifiers.max_targets_bonus
 	
@@ -229,3 +259,8 @@ func _physics_process(delta):
 	if lifetime_timer >= lifetime:
 		clear_warnings()
 		queue_free()
+
+# NOUVELLE MÉTHODE : Configuration du nombre de cibles
+func set_target_count(count: int):
+	max_targets = count
+	print("⚡ Lightning target count set to: ", max_targets)

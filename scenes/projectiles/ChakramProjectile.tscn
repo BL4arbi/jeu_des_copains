@@ -1,5 +1,6 @@
-[gd_scene load_steps=7 format=3 uid="uid://c586otfufpndi"]
+[gd_scene load_steps=8 format=3 uid="uid://c586otfufpndi"]
 
+[ext_resource type="Script" uid="uid://60ntk4xoy6c6" path="res://scenes/projectiles/chakram_projectile.gd" id="1_fno1q"]
 [ext_resource type="Texture2D" uid="uid://dxmaea04vkrk7" path="res://assets/SPRITES/projectiles/BasicYellowBullet.png" id="1_vfnqr"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_mvtwm"]
@@ -45,6 +46,7 @@ _data = {
 }
 
 [node name="ChakramProjectile" type="Area2D"]
+script = ExtResource("1_fno1q")
 
 [node name="Sprite2D" type="Sprite2D" parent="."]
 texture = ExtResource("1_vfnqr")

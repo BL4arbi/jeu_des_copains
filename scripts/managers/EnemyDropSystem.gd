@@ -297,7 +297,10 @@ func create_drop_effect(position: Vector2, rarity: String):
 	tween.parallel().tween_property(effect, "position:y", position.y - 50, 1.0)
 	tween.parallel().tween_property(effect, "scale", Vector2(2, 2), 0.5)
 	tween.parallel().tween_property(effect, "modulate:a", 0.0, 1.0)
-	tween.tween_callback(func(): effect.queue_free())
+	tween.tween_callback(func(): 
+		if is_instance_valid(effect):
+			effect.call_deferred("queue_free")  
+	)
 
 func update_luck_progression():
 	# Augmenter la chance selon la progression
