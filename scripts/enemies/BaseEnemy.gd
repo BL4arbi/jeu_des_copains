@@ -1,6 +1,7 @@
 # BaseEnemy.gd - Version avec erreur process_frame corrigée
 extends BaseCharacter
 
+
 # === VARIABLES DE BASE ===
 var enemy_type: String = "Grunt"
 var is_elite: bool = false

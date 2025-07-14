@@ -10,7 +10,7 @@ extends Node2D
 
 # Systèmes du jeu
 var drop_system: EnemyDropSystem
-var buff_system: BuffSystem
+var buff_system: Node
 
 # Timer de nettoyage local
 var local_cleanup_timer: Timer
@@ -46,7 +46,8 @@ func setup_game_systems():
 	drop_system.add_to_group("drop_system")
 	
 	# === SYSTÈME DE BUFFS ===
-	buff_system = BuffSystem.new()
+	var buff_script = preload("res://scripts/managers/BuffSystem.gd")
+	buff_system = buff_script.new()	
 	buff_system.name = "BuffSystem"
 	add_child(buff_system)
 	buff_system.add_to_group("buff_system")

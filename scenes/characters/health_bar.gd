@@ -2,16 +2,19 @@
 # Script à attacher à la ProgressBar de santé
 extends ProgressBar
 
-var target_character: BaseCharacter = null
+var target_character: Node = null
 
 func _ready():
 	# Trouver le personnage parent
-	target_character = get_parent() as BaseCharacter
+	target_character = get_parent()
 	
 	if target_character:
 		# Connecter aux signaux du personnage
 		if target_character.has_signal("health_changed"):
 			target_character.health_changed.connect(_on_health_changed)
+			print("✅ HealthBar connected to: ", target_character.name)
+		else:
+			print("❌ No health_changed signal found on: ", target_character.name)
 		
 		# Configuration initiale
 		max_value = 100
@@ -19,10 +22,8 @@ func _ready():
 		
 		# Style de la barre
 		setup_health_bar_style()
-		
-		print("HealthBar connected to: ", target_character.name)
 	else:
-		print("ERROR: HealthBar parent is not a BaseCharacter")
+		print("❌ ERROR: HealthBar parent not found")
 
 func setup_health_bar_style():
 	# Position au-dessus du personnage
@@ -36,6 +37,8 @@ func setup_health_bar_style():
 	z_index = 100
 
 func _on_health_changed(current_health: float, max_health: float):
+	print("🩺 HealthBar update: ", current_health, "/", max_health)
+	
 	# Mettre à jour les valeurs
 	max_value = max_health
 	value = current_health
