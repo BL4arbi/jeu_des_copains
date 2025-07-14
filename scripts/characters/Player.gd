@@ -365,197 +365,48 @@ func take_damage(amount: float):
 		print("🛡️ Damage blocked (dead or invulnerable)")
 		return
 	
-	# Appliquer la réduction de dégâts (armor buff)
-	var damage_reduction = get_meta("damage_reduction", 0.0)
-	var final_damage = amount * (1.0 - damage_reduction)
-	
-	if damage_reduction > 0:
-		print("🛡️ Damage reduced from ", amount, " to ", final_damage, " (", int(damage_reduction*100), "% reduction)")
-	
-	super.take_damage(final_damage)
 
-# === MÉTHODE POUR APPLIQUER LE LIFESTEAL ===
-func apply_lifesteal_on_damage(damage_dealt: float):
+# === FONCTION POUR AFFICHER TES STATS ===
+func get_player_stats_text() -> String:
+	var crit_chance = get_meta("crit_chance", 0.0)
+	var crit_multiplier = get_meta("crit_damage_multiplier", 1.5)
 	var lifesteal = get_meta("lifesteal", 0.0)
+	var fire_rate_boost = get_meta("fire_rate_boost", 0.0)
+	var damage_reduction = get_meta("damage_reduction", 0.0)
+	var extra_projectiles = get_meta("extra_projectiles", 0)
+	var penetration = get_meta("penetration_bonus", 0)
+	
+	var stats = "=== STATS JOUEUR ===\n"
+	stats += "Dégâts: " + str(int(damage)) + "\n"
+	stats += "Vie: " + str(int(current_health)) + "/" + str(int(max_health)) + "\n"
+	stats += "Vitesse: " + str(int(speed)) + "\n"
+	
+	if crit_chance > 0:
+		stats += "Critique: " + str(int(crit_chance * 100)) + "% chance, x" + str(crit_multiplier) + " dégâts\n"
 	if lifesteal > 0:
-		var heal_amount = damage_dealt * lifesteal
-		heal(heal_amount)
-		show_lifesteal_effect(heal_amount)
+		stats += "Vol de vie: " + str(int(lifesteal * 100)) + "%\n"
+	if fire_rate_boost > 0:
+		stats += "Cadence: +" + str(int(fire_rate_boost * 100)) + "%\n"
+	if damage_reduction > 0:
+		stats += "Armure: " + str(int(damage_reduction * 100)) + "% résistance\n"
+	if extra_projectiles > 0:
+		stats += "Projectiles: +" + str(extra_projectiles) + "\n"
+	if penetration > 0:
+		stats += "Pénétration: +" + str(penetration) + "\n"
+	
+	return stats
 
-func show_lifesteal_effect(heal_amount: float):
-	var heal_label = Label.new()
-	heal_label.text = "+" + str(int(heal_amount))
-	heal_label.add_theme_color_override("font_color", Color.GREEN)
-	heal_label.add_theme_font_size_override("font_size", 16)
-	heal_label.position = global_position + Vector2(randf_range(-30, 30), -40)
-	
-	get_tree().current_scene.add_child(heal_label)
-	
-	# Timer simple pour supprimer le label
-	var timer = Timer.new()
-	heal_label.add_child(timer)
-	timer.wait_time = 2.0
-	timer.one_shot = true
-	timer.timeout.connect(func(): heal_label.queue_free())
-	timer.start()
 
-# OVERRIDE die pour le respawn
-func die():
-	if is_dead:
-		return
-	
-	is_dead = true
-	print("💀 Player died! Respawning in ", respawn_time, " seconds...")
-	
-	# Arrêter les mouvements
-	velocity = Vector2.ZERO
-	visible = false
-	collision_layer = 0
-	
-	create_death_effect()
-	
-	# Timer de respawn
-	var respawn_timer = Timer.new()
-	add_child(respawn_timer)
-	respawn_timer.wait_time = respawn_time
-	respawn_timer.one_shot = true
-	respawn_timer.timeout.connect(_on_respawn)
-	respawn_timer.start()
-	
-	show_death_message()
 
-func _on_respawn():
-	print("✨ Player respawning!")
-	
-	is_dead = false
-	visible = true
-	collision_layer = 1
-	
-	# Vie complète
-	current_health = max_health
-	health_changed.emit(current_health, max_health)
-	
-	# Position sûre
-	global_position = get_viewport().get_visible_rect().size / 2
-	
-	# Invulnérabilité temporaire
-	is_invulnerable = true
-	var invul_timer = Timer.new()
-	add_child(invul_timer)
-	invul_timer.wait_time = 2.0
-	invul_timer.one_shot = true
-	invul_timer.timeout.connect(func(): 
-		is_invulnerable = false
-		modulate = Color.WHITE
-		invul_timer.queue_free()
-	)
-	invul_timer.start()
-	
-	hide_death_message()
+# === APPLIQUER L'ARMURE ===
+# Si tu veux que l'armure fonctionne, ajoute ça dans ta fonction take_damage:
 
-func create_death_effect():
-	for i in range(5):
-		var particle = Sprite2D.new()
-		get_tree().current_scene.add_child(particle)
-		
-		var image = Image.create(8, 8, false, Image.FORMAT_RGB8)
-		image.fill(Color.RED)
-		
-		var texture = ImageTexture.new()
-		texture.set_image(image)
-		particle.texture = texture
-		particle.global_position = global_position
-		
-		# Timer simple pour supprimer les particules
-		var timer = Timer.new()
-		particle.add_child(timer)
-		timer.wait_time = 1.0
-		timer.one_shot = true
-		timer.timeout.connect(func(): particle.queue_free())
-		timer.start()
-
-var death_message: Label = null
-
-func show_death_message():
-	death_message = Label.new()
-	death_message.text = "💀 MORT! Respawn dans " + str(int(respawn_time)) + "s..."
-	death_message.position = Vector2(400, 300)
-	death_message.add_theme_font_size_override("font_size", 24)
-	death_message.add_theme_color_override("font_color", Color.RED)
-	get_tree().current_scene.add_child(death_message)
-
-func hide_death_message():
-	if death_message and is_instance_valid(death_message):
-		death_message.queue_free()
-		death_message = null
-
-# Méthodes pour les effets de statut existantes
-func apply_status_effect(effect_type: String, duration: float, power: float):
-	if is_dead:
-		return
-		
-	print("Player affected by: ", effect_type, " for ", duration, "s")
 	
-	match effect_type:
-		"slow":
-			apply_slow_effect(duration, power)
-		"poison":
-			apply_poison_effect(duration, power)
-		"burn":
-			apply_burn_effect(duration, power)
-		"freeze":
-			apply_freeze_effect(duration)
 
-func apply_slow_effect(duration: float, power: float):
-	var original_speed = speed
-	speed *= power
-	
-	var timer = Timer.new()
-	add_child(timer)
-	timer.wait_time = duration
-	timer.one_shot = true
-	timer.timeout.connect(func(): 
-		speed = original_speed
-		timer.queue_free()
-		print("Slow effect ended")
-	)
-	timer.start()
+# === MULTISHOT ET PÉNÉTRATION ===
+# Pour utiliser ces buffs dans tes projectiles:
+func get_multishot_count() -> int:
+	return 1 + get_meta("extra_projectiles", 0)
 
-func apply_poison_effect(duration: float, power: float):
-	var poison_timer = Timer.new()
-	add_child(poison_timer)
-	poison_timer.wait_time = 0.5
-	poison_timer.timeout.connect(func(): 
-		take_damage(power)
-		print("Poison damage: ", power)
-	)
-	poison_timer.start()
-	
-	var end_timer = Timer.new()
-	add_child(end_timer)
-	end_timer.wait_time = duration
-	end_timer.one_shot = true
-	end_timer.timeout.connect(func():
-		poison_timer.queue_free()
-		end_timer.queue_free()
-		print("Poison effect ended")
-	)
-	end_timer.start()
-
-func apply_burn_effect(duration: float, power: float):
-	apply_poison_effect(duration, power)
-
-func apply_freeze_effect(duration: float):
-	var original_speed = speed
-	speed = 0
-	
-	var timer = Timer.new()
-	add_child(timer)
-	timer.wait_time = duration
-	timer.one_shot = true
-	timer.timeout.connect(func(): 
-		speed = original_speed
-		timer.queue_free()
-		print("Freeze effect ended")
-	)
-	timer.start()
+func get_penetration_bonus() -> int:
+	return get_meta("penetration_bonus", 0)

@@ -177,7 +177,7 @@ func add_status_effect(type: String, duration: float = 3.0, power: float = 1.0):
 func setup(dmg: float, spd: float, lifetime: float, player_ref: Player = null):
 	damage = dmg
 	speed = spd
-	max_lifetime = lifetime
+	lifetime = lifetime
 	owner_player = player_ref
 
 func launch(start_position: Vector2, target_position: Vector2):

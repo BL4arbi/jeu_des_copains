@@ -1,7 +1,7 @@
 # EnemySpawner.gd - Version équilibrée avec plus d'ennemis
 extends Node
 class_name EnemySpawner
-
+const MAX_ENEMIES_AT_STARTUP = 10
 @export var basic_enemy_scene: PackedScene = preload("res://scenes/characters/enemies/basic_enemy.tscn")
 @export var shooting_enemy_scene: PackedScene = preload("res://scenes/characters/enemies/shooting_enemy.tscn")
 @export var elite_enemy_scene: PackedScene = preload("res://scenes/characters/enemies/elite_enemy.tscn")
@@ -57,14 +57,15 @@ var enemy_types: Array = [
 ]
 
 func _ready():
+	await get_tree().process_frame
+	await get_tree().process_frame
 	find_player()
 	
 	# Spawn initial plus agressif
 	for i in range(3):
 		spawn_enemy_around_player()
 	
-	print("🐺 EnemySpawner ready - Aggressive mode activated!")
-	print("📊 Target: ", max_enemies, " enemies, spawn every ", spawn_interval, "s")
+	
 
 func find_player():
 	player = get_tree().get_first_node_in_group("players")
@@ -136,10 +137,10 @@ func trigger_enemy_wave():
 func spawn_enemy_around_player():
 	if not player:
 		return
-	
+	var current_enemies = get_tree().get_nodes_in_group("enemies").size()
 	var spawn_pos = get_spawn_position_around_player()
 	var enemy_type = choose_enemy_type()
-	
+	var max_enemies = MAX_ENEMIES_AT_STARTUP
 	if not enemy_type.scene:
 		print("ERROR: Enemy scene is null for type: ", enemy_type.name)
 		return
@@ -147,8 +148,7 @@ func spawn_enemy_around_player():
 	var enemy = enemy_type.scene.instantiate()
 	enemy.global_position = spawn_pos
 	
-	get_tree().current_scene.add_child(enemy)
-	
+	get_tree().current_scene.add_child.call_deferred(enemy)	
 	# Configuration différée pour éviter les erreurs
 	enemy.call_deferred("configure_enemy_deferred", enemy_type)
 	
@@ -157,7 +157,11 @@ func spawn_enemy_around_player():
 	enemy.tree_exiting.connect(_on_enemy_died.bind(enemy))
 	
 	total_spawned += 1
+	if get_tree().current_scene.has_meta("game_started"):
+		max_enemies = 50  # Limite normale après
 	
+	if current_enemies >= max_enemies:
+		return
 	print("🐺 Spawned ", enemy_type.name, " at ", spawn_pos, " (Active: ", active_enemies.size(), ")")
 
 func get_spawn_position_around_player() -> Vector2:

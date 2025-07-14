@@ -1,6 +1,5 @@
 # BaseEnemy.gd - Version avec erreur process_frame corrigée
 extends BaseCharacter
-class_name BaseEnemy
 
 # === VARIABLES DE BASE ===
 var enemy_type: String = "Grunt"
