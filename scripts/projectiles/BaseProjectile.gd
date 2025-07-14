@@ -57,45 +57,87 @@ func setup_collision_layers():
 		_:
 			collision_layer = 16
 			collision_mask = 3
-
+# Dans BaseProjectile.gd - Fonction setup_visual_effects() corrigée
 func setup_visual_effects():
 	if not sprite:
 		return
 	
 	var base_color = Color.WHITE
+	
+	# COULEURS SELON LE PROPRIÉTAIRE
 	match owner_type:
 		"player":
-			base_color = Color.CYAN
+			base_color = Color.CYAN  # Bleu cyan pour le joueur
 		"enemy":
-			base_color = Color.RED
+			base_color = Color.ORANGE_RED  # Rouge-orange pour les ennemis
 		_:
 			base_color = Color.WHITE
 	
+	# COULEURS SELON LE TYPE DE PROJECTILE
 	match projectile_type:
 		"lightning":
-			base_color = Color.YELLOW
+			if owner_type == "player":
+				base_color = Color.YELLOW  # Jaune électrique pour joueur
+			else:
+				base_color = Color.PURPLE  # Violet sombre pour ennemis
 		"meteor":
-			base_color = Color.ORANGE
+			if owner_type == "player":
+				base_color = Color.ORANGE  # Orange pour joueur
+			else:
+				base_color = Color.DARK_RED  # Rouge sombre pour ennemis
 		"fork":
-			base_color = Color.PURPLE
+			if owner_type == "player":
+				base_color = Color.PURPLE  # Violet pour joueur
+			else:
+				base_color = Color.MAROON  # Marron rouge pour ennemis
 		"bounce":
-			base_color = Color.GREEN
+			if owner_type == "player":
+				base_color = Color.GREEN  # Vert pour joueur
+			else:
+				base_color = Color.DARK_GREEN  # Vert sombre pour ennemis
 		"homing":
-			base_color = Color.MAGENTA  # COULEUR DISTINCTIVE pour homing
+			if owner_type == "player":
+				base_color = Color.MAGENTA  # Magenta pour joueur
+			else:
+				base_color = Color.DARK_RED  # Rouge sombre pour ennemis
+		"laser":
+			if owner_type == "player":
+				base_color = Color.CYAN  # Cyan pour joueur
+			else:
+				base_color = Color.RED  # Rouge pour ennemis
+		"nova":
+			if owner_type == "player":
+				base_color = Color.PURPLE  # Violet pour joueur
+			else:
+				base_color = Color.DARK_RED  # Rouge sombre pour ennemis
+		"apocalypse":
+			if owner_type == "player":
+				base_color = Color.GOLD  # Or pour joueur
+			else:
+				base_color = Color.DARK_RED  # Rouge sombre pour ennemis
+		"singularity":
+			if owner_type == "player":
+				base_color = Color.PURPLE  # Violet pour joueur
+			else:
+				base_color = Color.BLACK  # Noir pour ennemis
 	
 	sprite.modulate = base_color
 	
-	# Effet de statut
+	# COULEURS DES EFFETS DE STATUT (superposées)
 	if has_status_effect:
+		var status_tint = Color.WHITE
 		match status_type:
 			"poison":
-				sprite.modulate = Color.GREEN * 1.5
+				status_tint = Color.GREEN * 1.5
 			"burn":
-				sprite.modulate = Color.RED * 1.5
+				status_tint = Color.RED * 1.5
 			"slow":
-				sprite.modulate = Color.BLUE * 1.5
+				status_tint = Color.BLUE * 1.5
 			"freeze":
-				sprite.modulate = Color.LIGHT_BLUE * 1.5
+				status_tint = Color.LIGHT_BLUE * 1.5
+		
+		# Mélanger la couleur de statut avec la couleur de base
+		sprite.modulate = base_color.lerp(status_tint, 0.3)
 
 func set_owner_type(type: String):
 	owner_type = type
@@ -132,10 +174,11 @@ func add_status_effect(type: String, duration: float = 3.0, power: float = 1.0):
 	setup_visual_effects()
 	print("Projectile status effect added: ", type, " power: ", power)
 
-func setup(projectile_damage: float, projectile_speed: float, projectile_lifetime: float):
-	damage = projectile_damage
-	speed = projectile_speed
-	lifetime = projectile_lifetime
+func setup(dmg: float, spd: float, lifetime: float, player_ref: Player = null):
+	damage = dmg
+	speed = spd
+	max_lifetime = lifetime
+	owner_player = player_ref
 
 func launch(start_position: Vector2, target_position: Vector2):
 	global_position = start_position
@@ -491,3 +534,48 @@ func create_explosion_effect():
 					var player = get_tree().get_first_node_in_group("players")
 					if player and player.has_method("apply_lifesteal_on_damage"):
 						player.apply_lifesteal_on_damage(explosion_damage)
+# Code à ajouter dans ta classe Projectile
+
+# === VARIABLES À AJOUTER ===
+var owner_player: Player = null  # Référence au joueur qui a tiré
+
+# === MODIFIER TA FONCTION setup() ===
+  # Stocker la référence du joueur
+
+# === MODIFIER TA FONCTION DE COLLISION AVEC LES ENNEMIS ===
+func _on_enemy_hit(enemy):
+	if not enemy.is_in_group("enemies"):
+		return
+	
+	# Appliquer les dégâts normaux
+	enemy.take_damage(damage)
+	
+	# Appliquer les effets de statut si le joueur en a
+	if owner_player:
+		var buff_system = get_tree().get_first_node_in_group("buff_system")
+		if buff_system and buff_system.has_method("apply_bullet_effects_to_enemy"):
+			buff_system.apply_bullet_effects_to_enemy(enemy, owner_player)
+	
+	# Effet visuel d'impact
+	create_impact_effect()
+	
+	# Détruire le projectile (sauf si penetration)
+	queue_free()
+
+# === FONCTION POUR EFFET VISUEL D'IMPACT ===
+func create_impact_effect():
+	var impact = Sprite2D.new()
+	get_tree().current_scene.add_child(impact)
+	
+	var image = Image.create(20, 20, false, Image.FORMAT_RGBA8)
+	image.fill(Color.YELLOW)
+	
+	var texture = ImageTexture.new()
+	texture.set_image(image)
+	impact.texture = texture
+	impact.global_position = global_position
+	
+	var tween = create_tween()
+	tween.tween_property(impact, "scale", Vector2(2, 2), 0.2)
+	tween.tween_property(impact, "modulate", Color.TRANSPARENT, 0.1)
+	tween.tween_callback(impact.queue_free)

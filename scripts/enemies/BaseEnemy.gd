@@ -6,7 +6,7 @@ class_name BaseEnemy
 var enemy_type: String = "Grunt"
 var is_elite: bool = false
 var armor: float = 0.0
-
+var active_status_effects: Dictionary = {}  # Stocke les effets actifs avec leurs stacks
 # Stats de combat
 var base_health: float = 25.0
 var base_damage: float = 8.0
@@ -176,6 +176,11 @@ func take_damage(amount: float):
 	var damage_reduction = amount * armor
 	var final_damage = amount - damage_reduction
 	
+	
+	var base_damage = amount - damage_reduction
+	
+	# Appliquer la malédiction si présente
+	var curse_multiplier = get_meta
 	if damage_reduction > 0:
 		show_armor_effect()
 	
@@ -448,6 +453,13 @@ func apply_status_effect(effect_type: String, duration: float, power: float):
 			apply_poison_effect(duration, power)
 		"freeze":
 			apply_freeze_effect(duration)
+		"fire":
+			apply_fire_effect(duration, power)
+		"electric":
+			apply_electric_effect(duration, power)
+		"bleeding":
+			apply_bleeding_effect(duration, power)
+		
 
 func apply_slow_effect(duration: float, power: float):
 	var original_speed = speed
@@ -493,3 +505,144 @@ func apply_freeze_effect(duration: float):
 		timer.queue_free()
 	)
 	timer.start()
+func apply_fire_effect(duration: float, power: float):
+	var fire_timer = Timer.new()
+	add_child(fire_timer)
+	fire_timer.wait_time = 0.5
+	fire_timer.timeout.connect(func(): 
+		take_damage(power)
+		show_fire_visual()
+	)
+	fire_timer.start()
+	
+	var end_timer = Timer.new()
+	add_child(end_timer)
+	end_timer.wait_time = duration
+	end_timer.one_shot = true
+	end_timer.timeout.connect(func():
+		fire_timer.queue_free()
+		end_timer.queue_free()
+		hide_fire_visual()
+	)
+	end_timer.start()
+
+func apply_electric_effect(duration: float, power: float):
+	var electric_timer = Timer.new()
+	add_child(electric_timer)
+	electric_timer.wait_time = 0.3
+	electric_timer.timeout.connect(func(): 
+		take_damage(power)
+		show_electric_visual()
+	)
+	electric_timer.start()
+	
+	var end_timer = Timer.new()
+	add_child(end_timer)
+	end_timer.wait_time = duration
+	end_timer.one_shot = true
+	end_timer.timeout.connect(func():
+		electric_timer.queue_free()
+		end_timer.queue_free()
+		hide_electric_visual()
+	)
+	end_timer.start()
+
+func apply_bleeding_effect(duration: float, power: float):
+	var bleeding_timer = Timer.new()
+	add_child(bleeding_timer)
+	bleeding_timer.wait_time = 1.0
+	bleeding_timer.timeout.connect(func(): 
+		take_damage(power)
+		show_bleeding_visual()
+	)
+	bleeding_timer.start()
+	
+	var end_timer = Timer.new()
+	add_child(end_timer)
+	end_timer.wait_time = duration
+	end_timer.one_shot = true
+	end_timer.timeout.connect(func():
+		bleeding_timer.queue_free()
+		end_timer.queue_free()
+		hide_bleeding_visual()
+	)
+	end_timer.start()
+
+# === EFFETS VISUELS POUR LES NOUVEAUX STATUTS ===
+
+func show_fire_visual():
+	var fire_effect = Sprite2D.new()
+	add_child(fire_effect)
+	
+	var image = Image.create(50, 50, false, Image.FORMAT_RGBA8)
+	image.fill(Color.ORANGE_RED)
+	
+	var texture = ImageTexture.new()
+	texture.set_image(image)
+	fire_effect.texture = texture
+	fire_effect.position = Vector2(-25, -25)
+	fire_effect.modulate = Color(1.0, 0.5, 0.0, 0.7)
+	
+	var timer = Timer.new()
+	fire_effect.add_child(timer)
+	timer.wait_time = 0.3
+	timer.one_shot = true
+	timer.timeout.connect(fire_effect.queue_free)
+	timer.start()
+
+func hide_fire_visual():
+	# Nettoyage automatique par les timers
+	pass
+
+func show_electric_visual():
+	var electric_effect = Sprite2D.new()
+	add_child(electric_effect)
+	
+	var image = Image.create(60, 60, false, Image.FORMAT_RGBA8)
+	image.fill(Color.CYAN)
+	
+	var texture = ImageTexture.new()
+	texture.set_image(image)
+	electric_effect.texture = texture
+	electric_effect.position = Vector2(-30, -30)
+	electric_effect.modulate = Color(0.0, 1.0, 1.0, 0.8)
+	
+	var timer = Timer.new()
+	electric_effect.add_child(timer)
+	timer.wait_time = 0.2
+	timer.one_shot = true
+	timer.timeout.connect(electric_effect.queue_free)
+	timer.start()
+
+func hide_electric_visual():
+	pass
+
+func show_bleeding_visual():
+	var bleeding_effect = Sprite2D.new()
+	add_child(bleeding_effect)
+	
+	var image = Image.create(40, 40, false, Image.FORMAT_RGBA8)
+	image.fill(Color.DARK_RED)
+	
+	var texture = ImageTexture.new()
+	texture.set_image(image)
+	bleeding_effect.texture = texture
+	bleeding_effect.position = Vector2(-20, -20)
+	bleeding_effect.modulate = Color(0.8, 0.0, 0.0, 0.6)
+	
+	var timer = Timer.new()
+	bleeding_effect.add_child(timer)
+	timer.wait_time = 0.5
+	timer.one_shot = true
+	timer.timeout.connect(bleeding_effect.queue_free)
+	timer.start()
+
+func hide_bleeding_visual():
+	pass
+
+# === MODIFIER LA FONCTION apply_status_effect EXISTANTE ===
+
+
+			
+
+# === MODIFIER LA FONCTION take_damage POUR LES MALÉDICTIONS ===
