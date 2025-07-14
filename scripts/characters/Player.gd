@@ -364,7 +364,18 @@ func take_damage(amount: float):
 	if is_dead or is_invulnerable:
 		print("🛡️ Damage blocked (dead or invulnerable)")
 		return
+	var damage_reduction = get_meta("damage_reduction", 0.0)
+	var final_damage = amount * (1.0 - damage_reduction)
 	
+	# Appliquer les dégâts
+	super.take_damage(final_damage)
+	
+	# Vol de vie
+	var lifesteal = get_meta("lifesteal", 0.0)
+	if lifesteal > 0:
+		var heal_amount = final_damage * lifesteal
+		heal(heal_amount)
+		print("🧛 Lifesteal: +", heal_amount, " HP")
 
 # === FONCTION POUR AFFICHER TES STATS ===
 func get_player_stats_text() -> String:

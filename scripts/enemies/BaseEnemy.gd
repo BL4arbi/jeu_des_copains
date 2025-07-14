@@ -180,7 +180,8 @@ func take_damage(amount: float):
 	var base_damage = amount - damage_reduction
 	
 	# Appliquer la malédiction si présente
-	var curse_multiplier = get_meta
+	var curse_multiplier = get_meta("curse_multiplier", 1.0)
+	final_damage *= curse_multiplier
 	if damage_reduction > 0:
 		show_armor_effect()
 	
