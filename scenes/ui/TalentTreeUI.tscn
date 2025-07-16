@@ -1,0 +1,132 @@
+[gd_scene load_steps=2 format=3 uid="uid://bl82aoord2vs5"]
+
+[ext_resource type="Script" uid="uid://bjeddkwfiy43g" path="res://scenes/ui/talent_tree_ui.gd" id="1_r6cdv"]
+
+[node name="TalentTreeUi" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_r6cdv")
+
+[node name="Background" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 1)
+
+[node name="MainPanel" type="Panel" parent="Background"]
+custom_minimum_size = Vector2(1000, 700)
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -20.0
+offset_top = -20.0
+offset_right = 20.0
+offset_bottom = 20.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Header" type="VBoxContainer" parent="Background/MainPanel"]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_left = -6.0
+offset_top = 32.0
+offset_right = -6.0
+offset_bottom = 154.0
+grow_horizontal = 2
+
+[node name="CharacterName" type="Label" parent="Background/MainPanel/Header"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="LevelLabel" type="Label" parent="Background/MainPanel/Header"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="ExperienceBar" type="ProgressBar" parent="Background/MainPanel/Header"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.625372, 0.239147, 0.422156, 1)
+theme_override_colors/font_outline_color = Color(0.887425, 0.668663, 0.799815, 1)
+
+[node name="TalentPointsLabel" type="Label" parent="Background/MainPanel/Header"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="ScrollContainer" type="ScrollContainer" parent="Background/MainPanel"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -474.0
+offset_top = -197.0
+offset_right = 326.0
+offset_bottom = 203.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="TalentGrid" type="GridContainer" parent="Background/MainPanel/ScrollContainer"]
+layout_mode = 2
+columns = 3
+
+[node name="Force" type="Button" parent="Background/MainPanel/ScrollContainer/TalentGrid"]
+layout_mode = 2
+
+[node name="dmg" type="Button" parent="Background/MainPanel/ScrollContainer/TalentGrid"]
+layout_mode = 2
+
+[node name="crit" type="Button" parent="Background/MainPanel/ScrollContainer/TalentGrid"]
+layout_mode = 2
+
+[node name="speed" type="Button" parent="Background/MainPanel/ScrollContainer/TalentGrid"]
+layout_mode = 2
+
+[node name="hp" type="Button" parent="Background/MainPanel/ScrollContainer/TalentGrid"]
+layout_mode = 2
+
+[node name="hp2" type="Button" parent="Background/MainPanel/ScrollContainer/TalentGrid"]
+layout_mode = 2
+
+[node name="Footer" type="HBoxContainer" parent="Background/MainPanel"]
+layout_mode = 1
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -503.0
+offset_top = -60.0
+offset_right = -334.0
+offset_bottom = -29.0
+grow_horizontal = 2
+grow_vertical = 0
+
+[node name="BackButton" type="Button" parent="Background/MainPanel/Footer"]
+layout_mode = 2
+text = "Retour
+"
+
+[node name="ResetButton" type="Button" parent="Background/MainPanel/Footer"]
+layout_mode = 2
+text = "Reset"
+
+[node name="PlayButton" type="Button" parent="Background/MainPanel/Footer"]
+layout_mode = 2
+text = "jouer"

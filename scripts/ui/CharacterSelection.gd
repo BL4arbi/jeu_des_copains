@@ -11,7 +11,8 @@ extends Control
 @onready var speed_label: Label = get_node_or_null("MarginContainer/HBoxContainer/RightPanel/CharacterInfo/StatsContainer/SpeedLabel")
 @onready var damage_label: Label = get_node_or_null("MarginContainer/HBoxContainer/RightPanel/CharacterInfo/StatsContainer/DamageLabel")
 @onready var description_label: Label = get_node_or_null("MarginContainer/HBoxContainer/RightPanel/CharacterInfo/DescriptionLabel")
-@onready var select_button: Button = get_node_or_null("MarginContainer/HBoxContainer/RightPanel/SelectButton")
+@onready var select_button: Button = get_node_or_null("MarginContainer/HBoxContainer/RightPanel/ButtonContainer/SelectButton")
+@onready var talents_button: Button = get_node_or_null("MarginContainer/HBoxContainer/RightPanel/ButtonContainer/TalentsButton")
 
 # Variables
 var selected_character_id: int = 0
@@ -21,12 +22,22 @@ func _ready():
 	print("=== CharacterSelection Ready ===")
 	check_ui_structure()
 	setup_character_list()
-	select_character(0)  # Sélectionner le premier par défaut
+	select_character(0)
 	
+	# Initialiser le gestionnaire de talents
+	setup_talent_manager()
+	
+	# Connecter les boutons
 	if select_button:
 		select_button.pressed.connect(_on_select_button_pressed)
 	else:
 		print("ERROR: SelectButton not found!")
+	
+	if talents_button:
+		talents_button.pressed.connect(_on_talents_button_pressed)
+		print("✅ Talents button connected")
+	else:
+		print("❌ Talents button not found - you need to add it to the scene")
 
 func check_ui_structure():
 	print("UI Structure Check:")
@@ -105,19 +116,40 @@ func update_character_preview(character_data: Dictionary):
 	# Description
 	if description_label:
 		description_label.text = character_data.description
+	if name_label:
+		name_label.text = character_data.name
 	
-	# Sprite du personnage
+	if health_label:
+		health_label.text = "Vie: " + str(character_data.health)
+	if speed_label:
+		speed_label.text = "Vitesse: " + str(character_data.speed)
+	if damage_label:
+		damage_label.text = "Dégâts: " + str(character_data.damage)
+	
+	if description_label:
+		description_label.text = character_data.description
+	
+	# NOUVEAU : Afficher les infos de talents
+	if talent_manager:
+		var talent_data = talent_manager.get_character_data(selected_character_id)
+		if talent_data:
+			var talent_info = "\n\n=== PROGRESSION ===\n"
+			talent_info += "Niveau: " + str(talent_data.level) + "\n"
+			talent_info += "Points de talents: " + str(talent_data.talent_points) + "\n"
+			talent_info += "Expérience: " + str(talent_data.experience) + "/" + str(talent_data.experience_needed)
+			
+			if description_label:
+				description_label.text += talent_info
+	
+	# Sprite du personnage (code existant)
 	if character_sprite and character_data.has("sprite_path"):
 		var sprite_path = character_data.sprite_path
 		if ResourceLoader.exists(sprite_path):
 			var texture = load(sprite_path)
 			character_sprite.texture = texture
-			print("Sprite loaded: ", sprite_path)
 		else:
-			print("Sprite not found: ", sprite_path)
 			character_sprite.texture = null
 	
-	print("Character preview updated for: ", character_data.name)
 
 func _on_select_button_pressed():
 	print("=== Select Button Pressed ===")
@@ -128,3 +160,50 @@ func _on_select_button_pressed():
 	
 	# Aller au TestLevel
 	get_tree().change_scene_to_file("res://scenes/levels/TestLevel.tscn")
+# CharacterSelection.gd - Ajout du bouton Talents
+
+# === AJOUTER DANS LES VARIABLES ===
+var talent_manager: Node
+
+# === MODIFIER _ready() ===
+
+
+func setup_talent_manager():
+	# Créer le gestionnaire de talents s'il n'existe pas
+	talent_manager = get_tree().get_first_node_in_group("talent_manager")
+	if not talent_manager:
+		var talent_manager_script = preload("res://scripts/managers/TalentManager.gd")
+		talent_manager = talent_manager_script.new()
+		talent_manager.name = "TalentManager"
+		get_tree().current_scene.add_child(talent_manager)
+		print("🌟 Talent Manager created")
+
+# === NOUVELLE FONCTION POUR LE BOUTON TALENTS ===
+func _on_talents_button_pressed():
+	print("🌟 Talents button pressed for character: ", selected_character_id)
+	
+	# Sauvegarder le personnage sélectionné
+	GlobalData.selected_character_id = selected_character_id
+	
+	# Aller à l'écran des talents
+	get_tree().change_scene_to_file("res://scenes/ui/TalentTreeUI.tscn")
+
+
+	
+
+
+
+
+
+# === INSTRUCTIONS POUR MODIFIER LA SCÈNE (OPTIONNEL) ===
+# Si vous voulez modifier la scène manuellement au lieu d'utiliser la création dynamique :
+# 
+# 1. Ouvrir CharacterSelection.tscn
+# 2. Sélectionner RightPanel
+# 3. Ajouter un HBoxContainer appelé "ButtonContainer"
+# 4. Déplacer SelectButton dans ButtonContainer
+# 5. Ajouter un nouveau Button appelé "TalentsButton" dans ButtonContainer
+# 6. Configurer TalentsButton :
+#    - Text: "Talents"
+#    - Custom Minimum Size: 100x40
+#    - Alignment: Center
