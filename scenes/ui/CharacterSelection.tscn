@@ -78,7 +78,15 @@ layout_mode = 2
 layout_mode = 2
 autowrap_mode = 3
 
-[node name="SelectButton" type="Button" parent="MarginContainer/HBoxContainer/RightPanel"]
+[node name="ButtonContainer" type="HBoxContainer" parent="MarginContainer/HBoxContainer/RightPanel"]
+layout_mode = 2
+
+[node name="SelectButton" type="Button" parent="MarginContainer/HBoxContainer/RightPanel/ButtonContainer"]
 custom_minimum_size = Vector2(0, 50)
 layout_mode = 2
 text = "Commencer l'aventure"
+
+[node name="TalentsButton" type="Button" parent="MarginContainer/HBoxContainer/RightPanel/ButtonContainer"]
+custom_minimum_size = Vector2(100, 40)
+layout_mode = 2
+icon_alignment = 1

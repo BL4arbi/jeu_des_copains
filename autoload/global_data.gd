@@ -85,7 +85,20 @@ func add_kill(enemy_type: String = "basic"):
 		"Boss":
 			boss_kills += 1
 			boss_killed.emit(Vector2.ZERO)
+	var exp_gain = 0
+	match enemy_type:
+		"basic", "Grunt":
+			exp_gain = 15
+		"Shooter":
+			exp_gain = 25
+		"Elite":
+			exp_gain = 50
+		"Armored":
+			exp_gain = 20
+		_:
+			exp_gain = 10
 	
+	gain_experience(exp_gain)
 	kill_count_updated.emit(total_kills)
 	print("📊 Total kills: ", total_kills, " (Elite: ", elite_kills, ", Boss: ", boss_kills, ")")
 
@@ -142,4 +155,197 @@ func save_progress():
 
 func load_progress():
 	# TODO: Implémenter vraie sauvegarde
-	print("📁 Progress loaded")
+	print("📁 Progress loaded") 
+var talent_points: int = 5  # Points de départ pour tester
+var experience: int = 0
+var experience_needed: int = 100
+var current_character_talents: Dictionary = {}
+var current_character_talent_tree: Dictionary = {}
+
+# Signal pour les talents
+signal talent_points_changed(new_points: int)
+signal experience_gained(amount: int)
+
+# === AJOUTER CES FONCTIONS DANS GlobalData.gd ===
+
+func gain_experience(amount: int):
+	experience += amount
+	experience_gained.emit(amount)
+	
+	# Vérifier level up
+	while experience >= experience_needed:
+		experience -= experience_needed
+		level_up()
+		experience_needed = int(experience_needed * 1.2)
+
+func level_up():
+	current_level += 1
+	
+	# Gagner des points de talents
+	var talent_points_gained = 2
+	gain_talent_points(talent_points_gained)
+	
+	print("🎉 LEVEL UP! Level ", current_level, " | Gained ", talent_points_gained, " talent points")
+
+func gain_talent_points(amount: int):
+	talent_points += amount
+	talent_points_changed.emit(talent_points)
+	print("🌟 Gained ", amount, " talent points! Total: ", talent_points)
+
+
+
+func apply_talents_to_player(player: Player):
+	if current_character_talents.is_empty():
+		print("⚠️ No talents to apply")
+		return
+	
+	print("🌟 Applying talents to player...")
+	
+	# Appliquer chaque talent
+	for talent_id in current_character_talents.keys():
+		var talent_state = current_character_talents[talent_id]
+		var talent_level = talent_state.level
+		
+		if talent_level > 0:
+			var talent_data = get_talent_data_by_id(talent_id)
+			if talent_data:
+				apply_talent_effect(player, talent_data, talent_level)
+
+func get_talent_data_by_id(talent_id: String) -> Dictionary:
+	if current_character_talent_tree.has("talents"):
+		for talent_data in current_character_talent_tree.talents:
+			if talent_data.id == talent_id:
+				return talent_data
+	return {}
+
+func apply_talent_effect(player: Player, talent_data: Dictionary, level: int):
+	var effect_type = talent_data.effect
+	var effect_value = talent_data.value * level
+	
+	match effect_type:
+		"damage":
+			player.damage += effect_value
+			print("💪 Talent damage: +", effect_value)
+		
+		"health":
+			player.max_health += effect_value
+			player.current_health += effect_value
+			print("❤️ Talent health: +", effect_value)
+		
+		"speed":
+			player.speed += effect_value
+			print("⚡ Talent speed: +", effect_value)
+		
+		"armor":
+			var current_armor = player.get_meta("damage_reduction", 0.0)
+			player.set_meta("damage_reduction", current_armor + effect_value)
+			print("🛡️ Talent armor: +", effect_value * 100, "%")
+		
+		"fire_rate":
+			var current_fire_rate = player.get_meta("fire_rate_boost", 0.0)
+			player.set_meta("fire_rate_boost", current_fire_rate + effect_value)
+			print("🔫 Talent fire rate: +", effect_value * 100, "%")
+		
+		"crit_chance":
+			var current_crit = player.get_meta("crit_chance", 0.0)
+			player.set_meta("crit_chance", current_crit + effect_value)
+			print("💥 Talent crit chance: +", effect_value * 100, "%")
+		
+		"lifesteal":
+			var current_lifesteal = player.get_meta("lifesteal", 0.0)
+			player.set_meta("lifesteal", current_lifesteal + effect_value)
+			print("🧛 Talent lifesteal: +", effect_value * 100, "%")
+		
+		"multishot":
+			var current_multishot = player.get_meta("extra_projectiles", 0)
+			player.set_meta("extra_projectiles", current_multishot + int(effect_value))
+			print("🎯 Talent multishot: +", int(effect_value))
+		
+		"pierce":
+			var current_pierce = player.get_meta("penetration_bonus", 0)
+			player.set_meta("penetration_bonus", current_pierce + int(effect_value))
+			print("🏹 Talent pierce: +", int(effect_value))
+		
+		"range":
+			var current_range = player.get_meta("range_bonus", 1.0)
+			player.set_meta("range_bonus", current_range + effect_value)
+			print("🎯 Talent range: +", effect_value * 100, "%")
+		
+		"fire_bullets":
+			var current_fire = player.get_meta("fire_damage_percent", 0.0)
+			player.set_meta("fire_damage_percent", current_fire + (effect_value * 0.02))
+			print("🔥 Talent fire bullets: +", effect_value * 2, "% HP as fire damage")
+		
+		"ice_bullets":
+			var current_ice = player.get_meta("ice_slow_power", 0.0)
+			player.set_meta("ice_slow_power", current_ice + (effect_value * 0.15))
+			print("❄️ Talent ice bullets: +", effect_value * 15, "% slow")
+		
+		"lightning_bullets":
+			var current_lightning = player.get_meta("lightning_stun_duration", 0.0)
+			player.set_meta("lightning_stun_duration", current_lightning + (effect_value * 0.5))
+			print("⚡ Talent lightning bullets: +", effect_value * 0.5, "s stun")
+		
+		"special":
+			apply_special_talent_effect(player, talent_data.id, level)
+
+func apply_special_talent_effect(player: Player, talent_id: String, level: int):
+	match talent_id:
+		"warrior_berserker":
+			player.set_meta("berserker_mode", true)
+			print("🔥 Berserker mode activated!")
+		
+		"warrior_guardian":
+			player.set_meta("health_regen", 2.0)
+			print("🛡️ Guardian regeneration activated!")
+		
+		"archer_volley":
+			player.set_meta("volley_shots", 5)
+			print("🏹 Volley shots activated!")
+		
+		"archer_sniper":
+			var current_crit_damage = player.get_meta("crit_damage_multiplier", 1.5)
+			player.set_meta("crit_damage_multiplier", current_crit_damage + 2.0)
+			print("🎯 Sniper mode activated!")
+		
+		"mage_meteor":
+			player.set_meta("meteor_rain_chance", 0.1)
+			print("☄️ Meteor rain activated!")
+		
+		"mage_arcane":
+			player.set_meta("fire_damage_percent", 0.03)
+			player.set_meta("ice_slow_power", 0.25)
+			player.set_meta("lightning_stun_duration", 1.0)
+			print("🔮 Arcane mastery activated!")
+
+
+
+# === FONCTION POUR RÉINITIALISER LES DONNÉES DE TALENTS ===
+
+func reset_talent_data():
+	talent_points = 5
+	experience = 0
+	experience_needed = 100
+	current_character_talents.clear()
+	current_character_talent_tree.clear()
+	print("🔄 Talent data reset")
+
+# === FONCTION POUR SAUVEGARDER/CHARGER LES TALENTS ===
+
+func save_talent_data() -> Dictionary:
+	return {
+		"talent_points": talent_points,
+		"experience": experience,
+		"experience_needed": experience_needed,
+		"current_character_talents": current_character_talents,
+		"current_character_talent_tree": current_character_talent_tree
+	}
+
+func load_talent_data(data: Dictionary):
+	talent_points = data.get("talent_points", 5)
+	experience = data.get("experience", 0)
+	experience_needed = data.get("experience_needed", 100)
+	current_character_talents = data.get("current_character_talents", {})
+	current_character_talent_tree = data.get("current_character_talent_tree", {})
+	
+	print("💾 Talent data loaded")

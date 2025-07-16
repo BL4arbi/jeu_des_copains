@@ -11,10 +11,10 @@ extends Node2D
 # Systèmes du jeu
 var drop_system: EnemyDropSystem
 var buff_system: Node
-
+var talent_manager: Node
 # Timer de nettoyage local
 var local_cleanup_timer: Timer
-
+var talent_script = preload("res://scripts/managers/TalentManager.gd")
 func _ready():
 	print("=== TestLevel Ready ===")
 	print("GlobalData player_stats: ", GlobalData.player_stats)
@@ -52,8 +52,10 @@ func setup_game_systems():
 	add_child(buff_system)
 	buff_system.add_to_group("buff_system")
 	
-	print("✅ Drop system created")
-	print("⭐ Buff system created")
+	talent_manager = talent_manager.new()
+	talent_manager.name = "TalentManager"
+	add_child(talent_manager)
+	
 
 func setup_signals():
 	# Connecter le signal de kill count
@@ -83,7 +85,8 @@ func _on_enemy_killed(enemy_type: String, enemy_position: Vector2):
 	if buff_system and buff_system.has_method("_on_enemy_killed"):
 		buff_system._on_enemy_killed(enemy_type, enemy_position)
 		print("⭐ Buff system notified of enemy death")
-
+	if talent_manager:
+		talent_manager.on_enemy_killed(enemy_type, GlobalData.selected_character_id)
 func _on_kill_count_updated(new_count: int):
 	if kill_counter:
 		kill_counter.text = "Kills: " + str(new_count)
@@ -249,7 +252,13 @@ func apply_character_stats():
 		print("Stats applied - Health:", player.max_health, " Speed:", player.speed, " Damage:", player.damage)
 	else:
 		print("No character selected, using default stats")
-
+	if talent_manager:
+			talent_manager.apply_talents_to_player(player, GlobalData.selected_character_id)
+			print("✅ Talents applied to player")
+		
+			print("Stats applied - Health:", player.max_health, " Speed:", player.speed, " Damage:", player.damage)
+	else:
+			print("No character selected, using default stats")
 func update_player_sprite():
 	var character_data = GlobalData.get_character_data(GlobalData.selected_character_id)
 	

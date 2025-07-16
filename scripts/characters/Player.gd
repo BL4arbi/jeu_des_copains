@@ -6,7 +6,8 @@ var weapons: Array[ProjectileData] = []
 var current_weapon: int = 0
 var fire_timer: float = 0.0 
 signal weapon_replacement_requested(new_weapon: ProjectileData)
-
+var health_regen_timer: float = 0.0
+var berserker_active: bool = false
 # Variables de respawn
 var is_dead: bool = false
 var respawn_time: float = 3.0
@@ -45,7 +46,41 @@ func setup_character_weapons():
 func setup_character_animations():
 	if animation_player and animation_player.has_animation("walk"):
 		animation_player.speed_scale = 1.0
+func handle_talent_effects(delta: float):
+	# Régénération de vie (Gardien)
+	var regen_rate = get_meta("health_regen", 0.0)
+	if regen_rate > 0:
+		health_regen_timer += delta
+		if health_regen_timer >= 1.0:  # Chaque seconde
+			heal(regen_rate)
+			health_regen_timer = 0.0
+	
+	# Mode Berserker
+	if get_meta("berserker_mode", false):
+		var health_percent = current_health / max_health
+		if health_percent <= 0.3:  # Moins de 30% de vie
+			if not berserker_active:
+				berserker_active = true
+				print("🔥 BERSERKER MODE ACTIVATED!")
+			
+			# Bonus de dégâts
+			var berserker_bonus = base_damage * 0.5
+			if not has_meta("berserker_bonus_applied"):
+				damage += berserker_bonus
+				set_meta("berserker_bonus_applied", true)
+		else:
+			if berserker_active:
+				berserker_active = false
+				print("❄️ Berserker mode deactivated")
+				
+				# Retirer le bonus
+				if has_meta("berserker_bonus_applied"):
+					damage = base_damage
+					remove_meta("berserker_bonus_applied")
+func _process(delta):
 
+	handle_talent_effects(delta)
+	
 func _physics_process(delta):
 	if is_dead:
 		return
@@ -91,12 +126,68 @@ func handle_shooting(delta):
 func get_effective_fire_rate(base_fire_rate: float) -> float:
 	var fire_rate_boost = get_meta("fire_rate_boost", 0.0)
 	return base_fire_rate * (1.0 - fire_rate_boost)
-
+func show_crit_effect():
+	# Effet visuel simple pour les critiques
+	var crit_label = Label.new()
+	crit_label.text = "CRITIQUE!"
+	crit_label.add_theme_color_override("font_color", Color.YELLOW)
+	crit_label.add_theme_font_size_override("font_size", 20)
+	crit_label.position = global_position + Vector2(0, -60)
+	
+	get_tree().current_scene.add_child(crit_label)
+	
+	var tween = create_tween()
+	tween.parallel().tween_property(crit_label, "position:y", crit_label.position.y - 40, 1.0)
+	tween.parallel().tween_property(crit_label, "modulate:a", 0.0, 1.0)
+	tween.tween_callback(func(): crit_label.queue_free())
 func get_effective_damage(base_weapon_damage: float) -> float:
 	var damage_boost = get_meta("damage_boost", 0.0)
 	var total_damage = (damage + base_weapon_damage) * (1.0 + damage_boost)
+	var crit_chance = get_meta("crit_chance", 0.0)
+	if crit_chance > 0 and randf() < crit_chance:
+		var crit_multiplier = get_meta("crit_damage_multiplier", 1.5)
+		total_damage *= crit_multiplier
+		
+		# Effet visuel de critique
+		show_crit_effect()
+		print("💥 CRITICAL HIT! x", crit_multiplier, " damage")
+	
 	return total_damage
-
+	
+func fire_volley(weapon: ProjectileData, target_pos: Vector2, shot_count: int):
+	print("🏹 VOLLEY ACTIVATED! Firing ", shot_count, " arrows")
+	
+	var base_direction = (target_pos - global_position).normalized()
+	var spread_angle = PI / 6  # 30 degrés total
+	
+	for i in range(shot_count):
+		var angle_offset = (spread_angle / (shot_count - 1)) * i - (spread_angle / 2)
+		var direction = base_direction.rotated(angle_offset)
+		var volley_target = global_position + direction * 500
+		
+		# Délai progressif pour l'effet visuel
+		var delay = i * 0.05
+		if delay > 0:
+			await get_tree().create_timer(delay).timeout
+		
+		fire_projectile(weapon, volley_target)
+func trigger_meteor_rain():
+	print("☄️ METEOR RAIN triggered by talent!")
+	
+	# Créer le projectile météore
+	var meteor_scene = preload("res://scenes/projectiles/MeteorProjectile.tscn")
+	if meteor_scene:
+		var meteor = meteor_scene.instantiate()
+		get_tree().current_scene.add_child(meteor)
+		
+		meteor.owner_type = "player"
+		meteor.damage = damage * 1.2
+		meteor.global_position = get_global_mouse_position()
+func check_talent_special_effects():
+	# Pluie de météores (Mage)
+	var meteor_chance = get_meta("meteor_rain_chance", 0.0)
+	if meteor_chance > 0 and randf() < meteor_chance:
+		trigger_meteor_rain()
 func fire_weapon():
 	var weapon = weapons[current_weapon]
 	var mouse_pos = get_global_mouse_position()
@@ -119,6 +210,7 @@ func fire_weapon():
 			var target_pos = global_position + direction * 500
 			
 			fire_projectile(weapon, target_pos)
+	check_talent_special_effects()
 	
 	# === EFFETS DE BUFFS SPÉCIAUX ===
 	# Chain Lightning

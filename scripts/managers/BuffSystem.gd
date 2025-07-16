@@ -377,7 +377,21 @@ func apply_bullet_effects_to_enemy(enemy: Node, projectile_owner: Player):
 				enemy.apply_cumulative_status_effect("bleeding", effect.duration, scaled_power, current_stacks)
 			"curse":
 				apply_curse_effect(enemy, effect.duration, scaled_power)
-
+	var fire_damage = projectile_owner.get_meta("fire_damage_percent", 0.0)
+	if fire_damage > 0:
+		var fire_dmg = projectile_owner.max_health * fire_damage
+		enemy.apply_status_effect("burn", 4.0, fire_dmg)
+		print("🔥 Talent fire damage: ", fire_dmg)
+	
+	var ice_slow = projectile_owner.get_meta("ice_slow_power", 0.0)
+	if ice_slow > 0:
+		enemy.apply_status_effect("slow", 3.0, ice_slow)
+		print("❄️ Talent ice slow: ", ice_slow)
+	
+	var lightning_stun = projectile_owner.get_meta("lightning_stun_duration", 0.0)
+	if lightning_stun > 0:
+		enemy.apply_status_effect("freeze", lightning_stun, 1.0)
+		print("⚡ Talent lightning stun: ", lightning_stun, "s")
 # Definir le nombre maximum de stacks par effet
 func get_max_stacks_for_effect(effect_type: String) -> int:
 	match effect_type:
