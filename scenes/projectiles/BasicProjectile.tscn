@@ -1,7 +1,7 @@
 [gd_scene load_steps=8 format=3 uid="uid://chwr7l70fbl3j"]
 
 [ext_resource type="Texture2D" uid="uid://bpqxy7qx04l5x" path="res://assets/SPRITES/projectiles/FIRE_BALL.png" id="1_cxaom"]
-[ext_resource type="Script" uid="uid://ci680abwjv1gl" path="res://scripts/projectiles/BaseProjectile.gd" id="1_ivxxx"]
+[ext_resource type="Script" uid="uid://ci680abwjv1gl" path="res://SCRIPTS/projectiles/BaseProjectile.gd" id="1_ivxxx"]
 
 [sub_resource type="CapsuleShape2D" id="CapsuleShape2D_jb0is"]
 radius = 5.0
