@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="Gem" load_steps=3 format=3 uid="uid://cflpjfjwxi5us"]
+
+[ext_resource type="Texture2D" uid="uid://w0ueh1fkei2u" path="res://assets/SPRITES/weapon/GRENADE_TOP_DOWN.png" id="1_av4ny"]
+[ext_resource type="Script" uid="uid://bcalt0l1ev33k" path="res://ressource/pickup/Gem.gd" id="2_fgfom"]
+
+[resource]
+script = ExtResource("2_fgfom")
+XP = 10.0
+title = "zgeg"
+icon = ExtResource("1_av4ny")
+description = "gagne 1 d'xp"
+metadata/_custom_type_script = "uid://bcalt0l1ev33k"

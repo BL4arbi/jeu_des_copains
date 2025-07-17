@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="Enemy" load_steps=5 format=3 uid="uid://dblmj3gtx24qu"]
+
+[ext_resource type="Script" uid="uid://dnp41sbln5m0f" path="res://ressource/pickup/PickupResource.gd" id="1_7u43r"]
+[ext_resource type="Script" uid="uid://bmbc3l4h0o8op" path="res://scripts/enemy/EnemyType.gd" id="1_qq0u6"]
+[ext_resource type="Texture2D" uid="uid://dej2c8n7ye1fq" path="res://assets/SPRITES/enemies/RPG Battlers 3/1 v2.png" id="2_qq0u6"]
+[ext_resource type="Resource" uid="uid://cflpjfjwxi5us" path="res://ressource/drop/1xp.tres" id="2_wtbnx"]
+
+[resource]
+script = ExtResource("1_qq0u6")
+title = "yeu"
+texture = ExtResource("2_qq0u6")
+health = 20.0
+damage = 3.0
+drops = Array[ExtResource("1_7u43r")]([ExtResource("2_wtbnx")])
+metadata/_custom_type_script = "uid://bmbc3l4h0o8op"

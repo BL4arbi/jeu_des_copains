@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="Enemy" load_steps=5 format=3 uid="uid://nqhfbwprg3hc"]
+
+[ext_resource type="Script" uid="uid://dnp41sbln5m0f" path="res://ressource/pickup/PickupResource.gd" id="1_lh0l2"]
+[ext_resource type="Script" uid="uid://bmbc3l4h0o8op" path="res://scripts/enemy/EnemyType.gd" id="1_xerqw"]
+[ext_resource type="Texture2D" uid="uid://dwegrdr6cjpnh" path="res://assets/SPRITES/enemies/RPG Battlers 3/10 v1.png" id="2_bngg1"]
+[ext_resource type="Resource" uid="uid://cflpjfjwxi5us" path="res://ressource/drop/1xp.tres" id="2_fbfpl"]
+
+[resource]
+script = ExtResource("1_xerqw")
+title = "rat"
+texture = ExtResource("2_bngg1")
+health = 30.0
+damage = 5.0
+drops = Array[ExtResource("1_lh0l2")]([ExtResource("2_fbfpl")])
+metadata/_custom_type_script = "uid://bmbc3l4h0o8op"
