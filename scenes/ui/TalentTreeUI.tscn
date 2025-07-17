@@ -1,6 +1,6 @@
-[gd_scene load_steps=2 format=3 uid="uid://bl82aoord2vs5"]
+[gd_scene load_steps=2 format=3 uid="uid://bn5a6me5hxmt5"]
 
-[ext_resource type="Script" uid="uid://bjeddkwfiy43g" path="res://scenes/ui/talent_tree_ui.gd" id="1_r6cdv"]
+[ext_resource type="Script" path="res://scenes/ui/talent_tree_ui.gd" id="1_r6cdv"]
 
 [node name="TalentTreeUi" type="Control"]
 layout_mode = 3
