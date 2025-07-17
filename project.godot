@@ -11,17 +11,9 @@ config_version=5
 [application]
 
 config/name="jeu_des_copains"
-run/main_scene="uid://3gdxnrntu7pg"
+run/main_scene="uid://b6j8w5fsc6um4"
 config/features=PackedStringArray("4.4", "Forward Plus")
 config/icon="res://assets/SPRITES/weapon/icon.svg"
-
-[autoload]
-
-GlobalData="*res://autoload/global_data.gd"
-SceneManager="*res://autoload/SceneManager.gd"
-WeaponCleanupManager="*res://autoload/weapon_cleanup_manager.gd"
-DifficultyManager="*res://autoload/difficulty_manager.gd"
-PlayerProgression="*res://autoload/player_progression.gd"
 
 [input]
 

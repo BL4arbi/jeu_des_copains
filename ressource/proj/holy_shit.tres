@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="Weapon" load_steps=4 format=3 uid="uid://ck4ftvlg4wtv1"]
+
+[ext_resource type="PackedScene" uid="uid://jlr5s1pdjfni" path="res://scene/projectile.tscn" id="1_jevln"]
+[ext_resource type="Script" uid="uid://cgnjt22j1bvk" path="res://scripts/projectile/weapon.gd" id="2_6eao2"]
+[ext_resource type="Script" uid="uid://du3i0bbw2bjqn" path="res://ressource/upgrade/Upgrade.gd" id="3_rmpq5"]
+
+[resource]
+script = ExtResource("2_6eao2")
+damage = 300.0
+cooldown = 0.1
+speed = 500.0
+projectile_node = ExtResource("1_jevln")
+upgrades = Array[ExtResource("3_rmpq5")]([])
+title = "HOly WEAPON"
+metadata/_custom_type_script = "uid://cgnjt22j1bvk"

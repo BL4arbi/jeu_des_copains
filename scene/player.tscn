@@ -1,0 +1,151 @@
+[gd_scene load_steps=12 format=3 uid="uid://d2uadidm2o654"]
+
+[ext_resource type="Script" uid="uid://cpr6lwg8a6t5t" path="res://scripts/player/player.gd" id="1_xo3ru"]
+[ext_resource type="Texture2D" uid="uid://crsw3l3mc646u" path="res://assets/SPRITES/character/Char 1/Character 1.png" id="2_hjaqi"]
+[ext_resource type="PackedScene" uid="uid://df5wls65pt5ba" path="res://scene/slot.tscn" id="3_ct4mp"]
+[ext_resource type="Resource" uid="uid://bgfkshp2w4wjo" path="res://ressource/proj/fleche_basique.tres" id="4_s4jxa"]
+[ext_resource type="PackedScene" uid="uid://ddelxf4g5gqiw" path="res://scene/passive_slot.tscn" id="5_oh5ij"]
+[ext_resource type="Script" uid="uid://cadai7weieaeh" path="res://scripts/ui/options.gd" id="5_s4jxa"]
+[ext_resource type="Resource" uid="uid://ddbuvaxi2j1ko" path="res://ressource/passive/Magnet.tres" id="6_oh5ij"]
+
+[sub_resource type="CapsuleShape2D" id="CapsuleShape2D_fvtld"]
+radius = 15.0
+height = 40.0
+
+[sub_resource type="CapsuleShape2D" id="CapsuleShape2D_hjaqi"]
+radius = 14.0
+height = 38.0
+
+[sub_resource type="CanvasTexture" id="CanvasTexture_ct4mp"]
+specular_color = Color(0, 0, 0, 1)
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_ct4mp"]
+radius = 83.006
+
+[node name="Player" type="CharacterBody2D"]
+collision_mask = 2
+script = ExtResource("1_xo3ru")
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+texture = ExtResource("2_hjaqi")
+hframes = 12
+vframes = 22
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+position = Vector2(-1, 1)
+shape = SubResource("CapsuleShape2D_fvtld")
+
+[node name="Selfdamage" type="Area2D" parent="."]
+collision_layer = 0
+collision_mask = 2
+
+[node name="Collision" type="CollisionShape2D" parent="Selfdamage"]
+unique_name_in_owner = true
+shape = SubResource("CapsuleShape2D_hjaqi")
+
+[node name="Health" type="ProgressBar" parent="."]
+unique_name_in_owner = true
+offset_left = -17.0
+offset_top = -20.0
+offset_right = -12.0
+offset_bottom = 10.0
+rotation = -1.57004
+value = 100.0
+fill_mode = 2
+show_percentage = false
+
+[node name="Timer" type="Timer" parent="."]
+autostart = true
+
+[node name="Camera2D" type="Camera2D" parent="."]
+position_smoothing_enabled = true
+
+[node name="UI" type="CanvasLayer" parent="."]
+
+[node name="Weapons" type="HBoxContainer" parent="UI"]
+offset_top = 22.0
+offset_right = 216.0
+offset_bottom = 62.0
+
+[node name="Slot" parent="UI/Weapons" instance=ExtResource("3_ct4mp")]
+layout_mode = 2
+item = ExtResource("4_s4jxa")
+
+[node name="Slot2" parent="UI/Weapons" instance=ExtResource("3_ct4mp")]
+layout_mode = 2
+
+[node name="Slot3" parent="UI/Weapons" instance=ExtResource("3_ct4mp")]
+layout_mode = 2
+
+[node name="Slot4" parent="UI/Weapons" instance=ExtResource("3_ct4mp")]
+layout_mode = 2
+
+[node name="Slot5" parent="UI/Weapons" instance=ExtResource("3_ct4mp")]
+layout_mode = 2
+
+[node name="XP" type="TextureProgressBar" parent="UI"]
+unique_name_in_owner = true
+offset_right = 578.0
+offset_bottom = 15.0
+max_value = 10.0
+value = 10.0
+texture_under = SubResource("CanvasTexture_ct4mp")
+
+[node name="Level" type="Label" parent="UI/XP"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 536.0
+offset_top = 38.0
+offset_right = 576.0
+offset_bottom = 61.0
+
+[node name="Options" type="VBoxContainer" parent="UI" node_paths=PackedStringArray("weapons", "passive_items")]
+unique_name_in_owner = true
+process_mode = 3
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -20.0
+offset_top = -20.0
+offset_right = 20.0
+offset_bottom = 20.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("5_s4jxa")
+weapons = NodePath("../Weapons")
+passive_items = NodePath("../PassiveItems")
+
+[node name="PassiveItems" type="HBoxContainer" parent="UI"]
+offset_top = 65.0
+offset_right = 40.0
+offset_bottom = 105.0
+
+[node name="PassiveSlot" parent="UI/PassiveItems" instance=ExtResource("5_oh5ij")]
+layout_mode = 2
+item = ExtResource("6_oh5ij")
+
+[node name="PassiveSlot2" parent="UI/PassiveItems" instance=ExtResource("5_oh5ij")]
+layout_mode = 2
+
+[node name="PassiveSlot3" parent="UI/PassiveItems" instance=ExtResource("5_oh5ij")]
+layout_mode = 2
+
+[node name="PassiveSlot4" parent="UI/PassiveItems" instance=ExtResource("5_oh5ij")]
+layout_mode = 2
+
+[node name="PassiveSlot5" parent="UI/PassiveItems" instance=ExtResource("5_oh5ij")]
+layout_mode = 2
+
+[node name="Magnet" type="Area2D" parent="."]
+collision_layer = 0
+collision_mask = 4
+
+[node name="Magnet" type="CollisionShape2D" parent="Magnet"]
+unique_name_in_owner = true
+shape = SubResource("CircleShape2D_ct4mp")
+
+[connection signal="body_entered" from="Selfdamage" to="." method="_on_selfdamage_body_entered"]
+[connection signal="timeout" from="Timer" to="." method="_on_timer_timeout"]
+[connection signal="area_entered" from="Magnet" to="." method="_on_magnet_area_entered"]

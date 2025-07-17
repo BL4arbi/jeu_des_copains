@@ -1,0 +1,62 @@
+[gd_resource type="Resource" script_class="SingleShot" load_steps=13 format=3 uid="uid://bgfkshp2w4wjo"]
+
+[ext_resource type="Resource" uid="uid://ck4ftvlg4wtv1" path="res://ressource/proj/holy_shit.tres" id="1_kom6g"]
+[ext_resource type="PackedScene" uid="uid://jlr5s1pdjfni" path="res://scene/projectile.tscn" id="1_nekgl"]
+[ext_resource type="Script" uid="uid://cd3f7gkqf2ong" path="res://scripts/projectile/SingleShot.gd" id="2_4ydab"]
+[ext_resource type="Resource" uid="uid://ddbuvaxi2j1ko" path="res://ressource/passive/Magnet.tres" id="2_ow6j8"]
+[ext_resource type="Texture2D" uid="uid://carwfej2juwp1" path="res://assets/SPRITES/projectiles/SplittingArrow.png" id="3_qgyrf"]
+[ext_resource type="Script" uid="uid://du3i0bbw2bjqn" path="res://ressource/upgrade/Upgrade.gd" id="4_qgyrf"]
+[ext_resource type="Script" uid="uid://cqr82sktin8ft" path="res://ressource/upgrade/ProjectileUpgrade.gd" id="5_axuay"]
+
+[sub_resource type="Resource" id="Resource_kom6g"]
+script = ExtResource("5_axuay")
+speed = 0.0
+damage = 1.0
+cooldown = 0.0
+description = "+1 damage"
+metadata/_custom_type_script = "uid://cqr82sktin8ft"
+
+[sub_resource type="Resource" id="Resource_ow6j8"]
+script = ExtResource("5_axuay")
+speed = 0.0
+damage = 0.0
+cooldown = -0.3
+description = "faster attack speed"
+metadata/_custom_type_script = "uid://cqr82sktin8ft"
+
+[sub_resource type="Resource" id="Resource_4u3sy"]
+script = ExtResource("5_axuay")
+speed = 150.0
+damage = 0.0
+cooldown = 0.0
+description = "the fast"
+metadata/_custom_type_script = "uid://cqr82sktin8ft"
+
+[sub_resource type="Resource" id="Resource_07aic"]
+script = ExtResource("5_axuay")
+speed = 0.0
+damage = 30.0
+cooldown = 0.0
+description = "ultime hurt"
+metadata/_custom_type_script = "uid://cqr82sktin8ft"
+
+[sub_resource type="Resource" id="Resource_254fa"]
+script = ExtResource("5_axuay")
+speed = 0.0
+damage = 0.0
+cooldown = -0.3
+description = "faast"
+metadata/_custom_type_script = "uid://cqr82sktin8ft"
+
+[resource]
+script = ExtResource("2_4ydab")
+damage = 30.0
+cooldown = 1.0
+speed = 400.0
+projectile_node = ExtResource("1_nekgl")
+upgrades = Array[ExtResource("4_qgyrf")]([SubResource("Resource_kom6g"), SubResource("Resource_ow6j8"), SubResource("Resource_4u3sy"), SubResource("Resource_07aic"), SubResource("Resource_254fa")])
+item_needed = ExtResource("2_ow6j8")
+evolution = ExtResource("1_kom6g")
+title = "fireball"
+texture = ExtResource("3_qgyrf")
+metadata/_custom_type_script = "uid://cd3f7gkqf2ong"
