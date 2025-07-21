@@ -1,4 +1,4 @@
-[gd_scene load_steps=31 format=3 uid="uid://d2uadidm2o654"]
+[gd_scene load_steps=32 format=3 uid="uid://d2uadidm2o654"]
 
 [ext_resource type="Script" uid="uid://cpr6lwg8a6t5t" path="res://scripts/player/player.gd" id="1_xo3ru"]
 [ext_resource type="Texture2D" uid="uid://crsw3l3mc646u" path="res://assets/SPRITES/character/Char 1/Character 1.png" id="2_hjaqi"]
@@ -10,6 +10,7 @@
 [ext_resource type="Texture2D" uid="uid://b427w7x8wguom" path="res://assets/SPRITES/GUI.png" id="8_ml7e8"]
 [ext_resource type="Script" uid="uid://ddtg5dxgf2c77" path="res://scripts/ui/chest.gd" id="9_ihjo1"]
 [ext_resource type="Texture2D" uid="uid://wku8xwo64v2g" path="res://assets/SPRITES/drop/Fantasy RPG (Toony) 32x32.png" id="10_dk1vr"]
+[ext_resource type="Script" uid="uid://bweebxut3bql5" path="res://scripts/ui/back.gd" id="11_ihjo1"]
 
 [sub_resource type="CapsuleShape2D" id="CapsuleShape2D_fvtld"]
 radius = 15.0
@@ -365,6 +366,35 @@ offset_bottom = 52.0
 text = "Gold : 0"
 horizontal_alignment = 2
 
+[node name="Debug" type="VBoxContainer" parent="UI"]
+offset_left = 20.0
+offset_top = 530.0
+offset_right = 60.0
+offset_bottom = 579.0
+
+[node name="Might" type="Label" parent="UI/Debug"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "M : 0
+"
+
+[node name="Back" type="Button" parent="UI"]
+process_mode = 3
+visible = false
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -61.0
+offset_top = 189.0
+offset_right = 67.0
+offset_bottom = 220.0
+grow_horizontal = 2
+grow_vertical = 2
+text = "BACK TO MENU"
+script = ExtResource("11_ihjo1")
+
 [node name="Magnet" type="Area2D" parent="."]
 collision_layer = 0
 collision_mask = 4
@@ -377,4 +407,5 @@ shape = SubResource("CircleShape2D_ct4mp")
 [connection signal="timeout" from="Timer" to="." method="_on_timer_timeout"]
 [connection signal="pressed" from="UI/Chest/Open" to="UI/Chest" method="_on_open_pressed"]
 [connection signal="pressed" from="UI/Chest/Close" to="UI/Chest" method="_on_close_pressed"]
+[connection signal="pressed" from="UI/Back" to="UI/Back" method="_on_pressed"]
 [connection signal="area_entered" from="Magnet" to="." method="_on_magnet_area_entered"]

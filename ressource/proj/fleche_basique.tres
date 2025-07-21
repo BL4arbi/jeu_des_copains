@@ -50,7 +50,7 @@ metadata/_custom_type_script = "uid://cqr82sktin8ft"
 
 [resource]
 script = ExtResource("2_4ydab")
-damage = 30.0
+damage = 50.0
 cooldown = 1.0
 speed = 400.0
 projectile_node = ExtResource("1_nekgl")

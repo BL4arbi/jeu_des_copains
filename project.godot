@@ -15,6 +15,11 @@ run/main_scene="uid://b6j8w5fsc6um4"
 config/features=PackedStringArray("4.4", "Forward Plus")
 config/icon="res://assets/SPRITES/weapon/icon.svg"
 
+[autoload]
+
+SaveDataa="*res://save_dataa.gd"
+Persistencee="*res://persistencee.gd"
+
 [input]
 
 move_up={

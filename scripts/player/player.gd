@@ -5,6 +5,8 @@ var health : float = 100:
 	set(value):
 		health = max(value, 0)
 		%Health.value = value
+		if health <=0:
+			get_tree().paused = true
 var movement_speed : float = 150
 var max_health : float = 100 :
 	set(value):
@@ -12,7 +14,12 @@ var max_health : float = 100 :
 		%Health.max_value = value
 var recovery : float = 0
 var armor : float = 0
-var might : float = 1.2
+var might : float = 1.0:
+	set(value):
+		might = value 
+		%Might.text = "M : " + str(value) 
+	
+	
 var area : float = 0
 var magnet : float  = 0:
 	set(value):
@@ -58,12 +65,14 @@ func _physics_process(delta):
 	health += recovery * delta
 
 func take_damage(amount):
-	health -= max(amount - armor, 0)
-
-func _on_self_damage_body_entered(body):
-	take_damage(body.damage)
+	health -= max(amount *(amount/(amount+armor)) , 1)
 
 
+
+
+func _ready():
+	Persistencee.gain_bonus_stats(self)
+	
 func _on_timer_timeout():
 	%Collision.set_deferred("disabled", true)
 	%Collision.set_deferred("disabled", false)
@@ -87,3 +96,8 @@ func open_chest():
 	$UI/Chest.open()
 	
 	
+
+
+func _on_selfdamage_body_entered(body: Node2D) -> void:
+	print('contact')
+	take_damage(body.damage)
