@@ -1,14 +1,19 @@
-[gd_scene load_steps=16 format=3 uid="uid://bygx1fgsy5yml"]
+[gd_scene load_steps=20 format=3 uid="uid://bygx1fgsy5yml"]
 
 [ext_resource type="PackedScene" uid="uid://lq74ltckxfw7" path="res://scene/upgrade.tscn" id="1_3er1b"]
 [ext_resource type="Script" uid="uid://dxuf0xjid6q3x" path="res://scripts/ui/skill_tree.gd" id="1_14wem"]
 [ext_resource type="Script" uid="uid://b72104xjooq1c" path="res://scripts/ui/main_menu.gd" id="1_by01r"]
+[ext_resource type="Texture2D" uid="uid://besbpsipi2awo" path="res://assets/SPRITES/menuing/skilltree 2.0.png" id="2_ictww"]
 [ext_resource type="Script" uid="uid://cm2il50s6pikm" path="res://scripts/mecanics/skill.gd" id="2_sepwh"]
 [ext_resource type="Script" uid="uid://cunus2jq0hq8b" path="res://ressource/stat/Stats.gd" id="3_14wem"]
 [ext_resource type="Texture2D" uid="uid://bfo5156ix5imf" path="res://assets/SPRITES/weapon/BAGUETTE_MAGIQUE.png" id="4_2atga"]
 [ext_resource type="Script" uid="uid://dmsecvjd6ctro" path="res://scripts/ui/gold.gd" id="5_by01r"]
 [ext_resource type="Script" uid="uid://b84fuxjsqct14" path="res://scripts/ui/start.gd" id="7_2atga"]
+[ext_resource type="Texture2D" uid="uid://c5x2m148r750a" path="res://assets/SPRITES/menuing/menu 2.0.png" id="8_hmxu4"]
 [ext_resource type="Script" uid="uid://dxqpokxlwp2k5" path="res://scripts/ui/enemy_list.gd" id="9_dclss"]
+
+[sub_resource type="StyleBoxTexture" id="StyleBoxTexture_ictww"]
+texture = ExtResource("2_ictww")
 
 [sub_resource type="Resource" id="Resource_dclss"]
 script = ExtResource("3_14wem")
@@ -79,6 +84,9 @@ cost = 500
 stats = SubResource("Resource_ictww")
 metadata/_custom_type_script = "uid://cm2il50s6pikm"
 
+[sub_resource type="StyleBoxTexture" id="StyleBoxTexture_dclss"]
+texture = ExtResource("8_hmxu4")
+
 [node name="MainMenu" type="Control"]
 layout_mode = 3
 anchors_preset = 15
@@ -91,13 +99,13 @@ grow_vertical = 2
 script = ExtResource("1_by01r")
 
 [node name="SkillTree" type="Panel" parent="."]
-visible = false
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxTexture_ictww")
 script = ExtResource("1_14wem")
 
 [node name="Might" type="Control" parent="SkillTree"]
@@ -116,22 +124,26 @@ grow_vertical = 2
 
 [node name="Upgrade" parent="SkillTree/Might" instance=ExtResource("1_3er1b")]
 layout_mode = 0
-offset_left = 59.0
-offset_top = -2.0
-offset_right = 99.0
-offset_bottom = 38.0
+offset_left = -246.0
+offset_top = -207.0
+offset_right = -206.0
+offset_bottom = -167.0
 skill = SubResource("Resource_hmxu4")
 
 [node name="Upgrade2" parent="SkillTree/Might" instance=ExtResource("1_3er1b")]
 layout_mode = 0
-offset_top = -2.0
-offset_bottom = 38.0
+offset_left = -247.0
+offset_top = -158.0
+offset_right = -207.0
+offset_bottom = -118.0
 skill = SubResource("Resource_14wem")
 
 [node name="Upgrade3" parent="SkillTree/Might" instance=ExtResource("1_3er1b")]
 layout_mode = 0
-offset_left = -62.0
-offset_right = -22.0
+offset_left = -199.0
+offset_top = -206.0
+offset_right = -159.0
+offset_bottom = -166.0
 skill = SubResource("Resource_1o50l")
 
 [node name="Gold" type="Label" parent="."]
@@ -145,38 +157,49 @@ horizontal_alignment = 2
 script = ExtResource("5_by01r")
 
 [node name="Menu" type="Panel" parent="."]
+visible = false
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxTexture_dclss")
 
 [node name="Start" type="Button" parent="Menu"]
 layout_mode = 0
-offset_left = 539.0
-offset_top = 509.0
-offset_right = 622.0
-offset_bottom = 562.0
+offset_left = 534.0
+offset_top = 257.0
+offset_right = 617.0
+offset_bottom = 310.0
 theme_override_font_sizes/font_size = 32
 text = "Start"
 script = ExtResource("7_2atga")
 
 [node name="Talent" type="Button" parent="Menu"]
 layout_mode = 0
-offset_left = 820.0
-offset_top = 450.0
-offset_right = 877.0
-offset_bottom = 481.0
+offset_left = 537.0
+offset_top = 316.0
+offset_right = 611.0
+offset_bottom = 347.0
 text = "Talent"
 
 [node name="Bestiary" type="Button" parent="Menu"]
 layout_mode = 0
-offset_left = 237.0
-offset_top = 469.0
-offset_right = 308.0
-offset_bottom = 500.0
+offset_left = 539.0
+offset_top = 352.0
+offset_right = 610.0
+offset_bottom = 383.0
 text = "bestiary"
+
+[node name="Button" type="Button" parent="Menu"]
+layout_mode = 0
+offset_left = 524.0
+offset_top = 590.0
+offset_right = 640.0
+offset_bottom = 627.0
+text = "credits
+"
 
 [node name="Bestiary" type="Panel" parent="."]
 visible = false
@@ -205,6 +228,7 @@ size_flags_horizontal = 3
 script = ExtResource("9_dclss")
 
 [node name="Information" type="Panel" parent="Bestiary"]
+visible = false
 custom_minimum_size = Vector2(250, 225)
 layout_mode = 1
 anchors_preset = 6
