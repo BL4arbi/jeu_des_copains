@@ -11,7 +11,7 @@ config_version=5
 [application]
 
 config/name="jeu_des_copains"
-run/main_scene="uid://b6j8w5fsc6um4"
+run/main_scene="uid://bygx1fgsy5yml"
 config/features=PackedStringArray("4.4", "Forward Plus")
 config/icon="res://assets/SPRITES/weapon/icon.svg"
 
