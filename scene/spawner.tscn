@@ -42,7 +42,7 @@ text = "0
 autostart = true
 
 [node name="Elite" type="Timer" parent="."]
-wait_time = 10.0
+wait_time = 2.0
 autostart = true
 
 [node name="wave" type="Timer" parent="."]

@@ -3,20 +3,13 @@ extends VBoxContainer
 @export var weapons : HBoxContainer
 @export var passive_items : HBoxContainer
 var OptionSlot = preload("res://scene/option_slot.tscn")
-
-@export var particles : GPUParticles2D
-@export var panel : NinePatchRect
+#@export var particles : GPUParticles2D
+#@export var panel : NinePatchRect
 
 func _ready():
 	hide()
-#	particles.hide()
+	#particles.hide()
 	#panel.hide()
-
-func close_option():
-	hide()
-#	particles.hide()
-#	panel.hide()
-	get_tree().paused = false
 
 func get_available_resource_in(items)-> Array[Item]:
 	var resources : Array[Item] = []
@@ -33,7 +26,7 @@ func add_option(item) -> int:
 		return 1
 	return 0
 
-func show_option():
+func show_options():
 	var weapons_available = get_available_resource_in(weapons)
 	var passive_item_available = get_available_resource_in(passive_items)
 	if weapons_available.size() == 0 and passive_item_available.size() == 0:
@@ -59,6 +52,24 @@ func show_option():
 		return
 	
 	show()
-#	particles.show()
-#	panel.show()
+	#particles.show()
+	#panel.show()
 	get_tree().paused = true
+
+
+func close_option():
+	hide()
+	#particles.hide()
+	#panel.hide()
+	get_tree().paused = false
+
+
+func get_available_upgrades()-> Array[Item]:
+	var upgrades : Array[Item] = []
+	for weapon : Weapon in get_available_resource_in(weapons):
+		if weapon.is_upgradable():
+			upgrades.append(weapon)
+	for passive_item : PassiveItem in get_available_resource_in(passive_items):
+		if passive_item.is_upgradable():
+			upgrades.append(passive_item)
+	return upgrades

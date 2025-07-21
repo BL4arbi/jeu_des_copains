@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="Chest" load_steps=3 format=3 uid="uid://cbynbqwu4m8o3"]
+
+[ext_resource type="Texture2D" uid="uid://b6fygixwlmcp3" path="res://assets/SPRITES/weapon/icon.svg" id="1_2mawv"]
+[ext_resource type="Script" uid="uid://bac1n8pksq6e3" path="res://scripts/mecanics/ChestResource.gd" id="2_haf11"]
+
+[resource]
+script = ExtResource("2_haf11")
+title = "Boss Chest"
+icon = ExtResource("1_2mawv")
+description = ""
+metadata/_custom_type_script = "uid://bac1n8pksq6e3"

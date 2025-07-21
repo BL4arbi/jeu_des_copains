@@ -33,14 +33,17 @@ var level : int = 1:
 	set(value):
 		level = value
 		%Level.text = "Lv " + str(value)
-		%Options.show_option()
+		%Options.show_options()
 		
 		if level >= 3:
 			%XP.max_value = 20
 		elif level >= 7:
 			%XP.max_value = 40
 
-
+var gold : int = 0 :
+	set(value):
+		gold = value 
+		%Gold.text = "Gold : " + str(value)
 
 func _physics_process(delta):
 	if is_instance_valid(nearest_enemy):
@@ -78,3 +81,9 @@ func check_XP():
 func _on_magnet_area_entered(area):
 	if area.has_method("follow"):
 		area.follow(self)
+func gain_gold(amount):
+	gold+=amount
+func open_chest():
+	$UI/Chest.open()
+	
+	

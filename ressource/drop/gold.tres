@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="Gold" load_steps=3 format=3 uid="uid://8csuxkd03t3p"]
+
+[ext_resource type="Script" uid="uid://capmuye0rpp8h" path="res://scripts/mecanics/gold.gd" id="1_kiw7r"]
+[ext_resource type="Texture2D" uid="uid://c4qul0sep5nl7" path="res://assets/SPRITES/drop/gold.jpg" id="2_b48en"]
+
+[resource]
+script = ExtResource("1_kiw7r")
+gold = 5
+title = "Gold"
+texture = ExtResource("2_b48en")
+metadata/_custom_type_script = "uid://capmuye0rpp8h"
