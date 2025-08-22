@@ -1,7 +1,7 @@
 #enemy
 extends CharacterBody2D
 @export var player : CharacterBody2D
-@onready var agent = $NavigationLink2D
+@onready var agent = $NavigationAgent2D  # ✅ CORRECTION: NavigationAgent2D pas NavigationLink2D
 var damage_popup_node = preload("res://scene/Damage.tscn")
 var direction : Vector2
 var speed : float = 75
@@ -11,31 +11,44 @@ var knockback : Vector2
 var home_position : Vector2
 var target : Node2D = null
 var drop = preload("res://scene/pickups.tscn")
+
 var health : float : 
 	set(value):
 		health = value 
 		if health <= 0:
 			drop_item()
 			queue_free()
+
 var elite : bool = false:
 	set(value):
 		elite = value
 		if value:
 			$Sprite2D.material = load("res://assets/shader/elite.tres")
-			scale = Vector2(1.5,1.5)
+			scale = Vector2(1.5, 1.5)
+
 var type : Enemy:
 	set(value):
 		type = value
 		$Sprite2D.texture = value.texture
 		damage = value.damage
 		health = value.health
-func set_target(player : CharacterBody2D):
-	target = player 
-	agent.set_target_position(player.global_position)
-	
+
+# ✅ CORRECTION: Vérifier si player n'est pas null
+func set_target(new_player: CharacterBody2D):
+	target = new_player
+	if target and agent:
+		agent.set_target_position(target.global_position)
+		print("Enemy target set to: ", target.name if target else "null")
+	elif agent:
+		agent.set_target_position(home_position)
+		print("Enemy returning home")
+
 func clear_target():
 	target = null
-	agent.set_target_position(home_position)
+	if agent:
+		agent.set_target_position(home_position)
+		print("Enemy cleared target, returning home")
+
 func check_separation(_delta):
 	if not player:
 		return
@@ -46,25 +59,31 @@ func check_separation(_delta):
 		player.nearest_enemy = self
 
 func _physics_process(delta):
+	# Vérifier que agent existe
+	if not agent:
+		return
 	
-	if target :
-		if  global_position.distance_to(target.global_position) > 500 :
+	if target and is_instance_valid(target):
+		if global_position.distance_to(target.global_position) > 500:
 			clear_target()
 		else:
-			agent.set_traget_position(target.global_position)
-	elif global_position.distance_to(home_position)>10:
-			agent.set_target_position(home_position)
+			agent.set_target_position(target.global_position)
+	elif global_position.distance_to(home_position) > 10:
+		agent.set_target_position(home_position)
+	
+	# Navigation
 	if agent.is_navigation_finished():
 		velocity = Vector2.ZERO
-	else :
+	else:
 		var next_path_point = agent.get_next_path_position()
 		direction = (next_path_point - global_position).normalized()
 		velocity = direction * speed
-	move_and_slide()
-	check_separation(delta)
-	knockback_update(delta)
 	
+	move_and_slide()
+
 func knockback_update(delta):
+	if not player:
+		return
 	velocity = (player.position - position).normalized() * speed
 	knockback = knockback.move_toward(Vector2.ZERO, 1)
 	velocity += knockback
@@ -75,18 +94,19 @@ func knockback_update(delta):
 func damage_popup(amount):
 	var popup = damage_popup_node.instantiate() 
 	popup.text = str(amount) 
-	popup.position = position + Vector2(-50,-25)
+	popup.position = position + Vector2(-50, -25)
 	get_tree().current_scene.add_child(popup)
-	
+
 func take_damage(amount):
 	var tween = get_tree().create_tween()
-	tween.tween_property($Sprite2D,"modulate",Color(3,0.25,0.25),0.2)
-	tween.chain().tween_property($Sprite2D,"modulate",Color(1,1,1),0.2)
+	tween.tween_property($Sprite2D, "modulate", Color(3, 0.25, 0.25), 0.2)
+	tween.chain().tween_property($Sprite2D, "modulate", Color(1, 1, 1), 0.2)
 	tween.bind_node(self)
 	damage_popup(amount)
 	health -= amount
+
 func drop_item():
-	if type.drops.size() == 0 :
+	if not type or type.drops.size() == 0:
 		return 
 	var item = type.drops.pick_random()
 	if elite:
@@ -97,4 +117,4 @@ func drop_item():
 	item_to_drop.position = position 
 	item_to_drop.player = player 
 	
-	get_tree().current_scene.call_deferred("add_child",item_to_drop)
+	get_tree().current_scene.call_deferred("add_child", item_to_drop)

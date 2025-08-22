@@ -1,13 +1,19 @@
-[gd_scene load_steps=4 format=3 uid="uid://dt5dxml8415qg"]
+[gd_scene load_steps=9 format=3 uid="uid://dt5dxml8415qg"]
 
 [ext_resource type="Script" uid="uid://lsqb6adn04yj" path="res://scripts/enemy/enemy_camp.gd" id="1_tlbch"]
 [ext_resource type="PackedScene" uid="uid://csokuq2r2tckl" path="res://scene/enemy.tscn" id="2_lru8d"]
+[ext_resource type="Script" uid="uid://bmbc3l4h0o8op" path="res://scripts/enemy/EnemyType.gd" id="3_ueqxy"]
+[ext_resource type="Resource" uid="uid://cfl2xiru7fjog" path="res://ressource/enemies/blob.tres" id="4_by2gf"]
+[ext_resource type="Resource" uid="uid://dh8hq2shwsop5" path="res://ressource/enemies/gros.tres" id="5_swfnp"]
+[ext_resource type="Resource" uid="uid://nqhfbwprg3hc" path="res://ressource/enemies/rat.tres" id="6_fy68v"]
+[ext_resource type="Resource" uid="uid://dblmj3gtx24qu" path="res://ressource/enemies/yeu.tres" id="7_dalbn"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_lm3q3"]
 size = Vector2(256, 256)
 
 [node name="EnemyCamp" type="Node2D" node_paths=PackedStringArray("enemies")]
 script = ExtResource("1_tlbch")
+enemy_types = Array[ExtResource("3_ueqxy")]([ExtResource("4_by2gf"), ExtResource("5_swfnp"), ExtResource("6_fy68v"), ExtResource("7_dalbn")])
 camp_rect = Rect2(-64, -64, 128, 128)
 enemy_scene = ExtResource("2_lru8d")
 enemies = NodePath("Enemies")

@@ -1,6 +1,8 @@
 extends Node2D
-@export var player : CharacterBody2D
-@export var enemy : PackedScene
+
+
+var player : CharacterBody2D = null
+
 @export var enemy_types : Array[Enemy]
 @export var camp_rect : Rect2 
 @export var enemy_scene : PackedScene
@@ -18,11 +20,11 @@ func spawn_enemies(elite : bool = false):
 		var offset = Vector2(cos(angle),sin(angle))*randf_range(radius *0.7,radius)
 		var local_pos = center + offset
 		var enemy_instance = enemy_scene.instantiate()
-		enemy_instance.type = enemy_types.pick_random()
+		enemy_instance.type = enemy_types[1]
 		enemy_instance.position = position + local_pos
 		enemy_instance.player = player  
 		enemy_instance.elite = elite
-		enemy_instance.set("home_position",enemy.position)
+		enemy_instance.set("home_position",enemy_instance.position)
 		enemies.add_child(enemy_instance)
 
 func remove_camp():
@@ -31,13 +33,13 @@ func remove_camp():
 	queue_free()
 
 func _on_player_body_entered(body: Node2D) -> void:
-	if body == player:
+	if body.is_in_group("player"):
 		player = body 
 		for enemy in enemies.get_children():
 			enemy.set_target(player)
 
 func _on_player_body_exited(body: Node2D) -> void:
-	if body == player:
+	if body.is_in_group("player"):
 		player = null 
 		for enemy in enemies.get_children():
 			enemy.set_target(player)
