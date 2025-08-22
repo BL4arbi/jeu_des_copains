@@ -33,7 +33,6 @@ var type : Enemy:
 		damage = value.damage
 		health = value.health
 
-# ✅ CORRECTION: Vérifier si player n'est pas null
 func set_target(new_player: CharacterBody2D):
 	target = new_player
 	if target and agent:
