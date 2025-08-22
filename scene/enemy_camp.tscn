@@ -1,0 +1,24 @@
+[gd_scene load_steps=4 format=3 uid="uid://dt5dxml8415qg"]
+
+[ext_resource type="Script" uid="uid://lsqb6adn04yj" path="res://scripts/enemy/enemy_camp.gd" id="1_tlbch"]
+[ext_resource type="PackedScene" uid="uid://csokuq2r2tckl" path="res://scene/enemy.tscn" id="2_lru8d"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_lm3q3"]
+size = Vector2(256, 256)
+
+[node name="EnemyCamp" type="Node2D" node_paths=PackedStringArray("enemies")]
+script = ExtResource("1_tlbch")
+camp_rect = Rect2(-64, -64, 128, 128)
+enemy_scene = ExtResource("2_lru8d")
+enemies = NodePath("Enemies")
+
+[node name="PlayerDetection" type="Area2D" parent="."]
+collision_mask = 3
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="PlayerDetection"]
+shape = SubResource("RectangleShape2D_lm3q3")
+
+[node name="Enemies" type="Node2D" parent="."]
+
+[connection signal="body_entered" from="PlayerDetection" to="." method="_on_player_body_entered"]
+[connection signal="body_exited" from="PlayerDetection" to="." method="_on_player_body_exited"]

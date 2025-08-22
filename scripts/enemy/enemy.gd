@@ -1,12 +1,15 @@
 #enemy
 extends CharacterBody2D
 @export var player : CharacterBody2D
+@onready var agent = $NavigationLink2D
 var damage_popup_node = preload("res://scene/Damage.tscn")
 var direction : Vector2
 var speed : float = 75
 var damage : float = 0
 var separation : float
 var knockback : Vector2
+var home_position : Vector2
+var target : Node2D = null
 var drop = preload("res://scene/pickups.tscn")
 var health : float : 
 	set(value):
@@ -26,7 +29,13 @@ var type : Enemy:
 		$Sprite2D.texture = value.texture
 		damage = value.damage
 		health = value.health
-
+func set_target(player : CharacterBody2D):
+	target = player 
+	agent.set_target_position(player.global_position)
+	
+func clear_target():
+	target = null
+	agent.set_target_position(home_position)
 func check_separation(_delta):
 	if not player:
 		return
@@ -37,8 +46,21 @@ func check_separation(_delta):
 		player.nearest_enemy = self
 
 func _physics_process(delta):
-	if not player:
-		return
+	
+	if target :
+		if  global_position.distance_to(target.global_position) > 500 :
+			clear_target()
+		else:
+			agent.set_traget_position(target.global_position)
+	elif global_position.distance_to(home_position)>10:
+			agent.set_target_position(home_position)
+	if agent.is_navigation_finished():
+		velocity = Vector2.ZERO
+	else :
+		var next_path_point = agent.get_next_path_position()
+		direction = (next_path_point - global_position).normalized()
+		velocity = direction * speed
+	move_and_slide()
 	check_separation(delta)
 	knockback_update(delta)
 	

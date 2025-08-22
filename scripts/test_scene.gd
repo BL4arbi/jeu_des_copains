@@ -2,6 +2,8 @@ extends Node2D
 
 @export var tilemap : TileMapLayer
 @export var player : CharacterBody2D 
+@export var enemy_camps : Node2D
+@export var enemy_camp : PackedScene
 
 const DUNGEON_WIDTH = 80
 const DUNGEON_HEIGHT = 80
@@ -10,6 +12,9 @@ const DUNGEON_HEIGHT = 80
 enum TileType {EMPTY , FLOOR , WALL}
 
 var dungeon_grid=[]
+var every_room = []
+var available_room = []
+
 func _ready():
 	create_dungeon()
 	
@@ -105,12 +110,24 @@ func render_dungeon():
 				TileType.FLOOR : tilemap.set_cell(Vector2i(x,y),0,Vector2i(7,1))
 				TileType.WALL : tilemap.set_cell(Vector2i(x,y),0,Vector2i(2,0))
 
-func place_player(rooms : Array[Rect2]):
-	player.position = rooms.pick_random().get_center() * 16
+func place_player():
+	player.position = available_room.pop_front().get_center() * 16
 
 
 func create_dungeon():
-	place_player(generate_dungeon())
+	every_room = generate_dungeon()
+	spawn_camps()
+	place_player()
 	add_walls()
 	render_dungeon()
-				
+
+func spawn_camps():
+	for camp in enemy_camps.get_children():
+		camp.remove_camp()
+	available_room = every_room.duplicate()
+	available_room.shuffle()
+	for i in range(5):
+		var camp = enemy_camp.instantiate()
+		camp.global_position = available_room.pop_front().get_center() * 16
+		enemy_camps.add_child(camp)
+		

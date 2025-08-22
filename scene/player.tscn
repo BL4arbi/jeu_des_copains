@@ -136,7 +136,7 @@ bg_color = Color(0.721569, 0.435294, 0.313726, 1)
 radius = 83.006
 
 [node name="Player" type="CharacterBody2D"]
-collision_mask = 2
+collision_mask = 3
 script = ExtResource("1_xo3ru")
 
 [node name="Sprite2D" type="Sprite2D" parent="."]
@@ -171,6 +171,7 @@ show_percentage = false
 autostart = true
 
 [node name="Camera2D" type="Camera2D" parent="."]
+zoom = Vector2(1.5, 1.5)
 position_smoothing_enabled = true
 
 [node name="UI" type="CanvasLayer" parent="."]

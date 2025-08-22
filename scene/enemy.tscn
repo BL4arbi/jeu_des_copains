@@ -5,6 +5,7 @@
 [sub_resource type="CapsuleShape2D" id="CapsuleShape2D_b7koy"]
 
 [node name="Enemy" type="CharacterBody2D" groups=["Enemy"]]
+top_level = true
 collision_layer = 2
 collision_mask = 2
 script = ExtResource("1_f87vc")
@@ -13,3 +14,5 @@ script = ExtResource("1_f87vc")
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
 shape = SubResource("CapsuleShape2D_b7koy")
+
+[node name="NavigationLink2D" type="NavigationAgent2D" parent="."]
