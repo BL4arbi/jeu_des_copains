@@ -72,7 +72,6 @@ func take_damage(amount):
 
 func _ready():
 	Persistencee.gain_bonus_stats(self)
-	add_to_group("player")
 	
 func _on_timer_timeout():
 	%Collision.set_deferred("disabled", true)
