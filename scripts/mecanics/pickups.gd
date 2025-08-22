@@ -26,5 +26,7 @@ func follow(_target : CharacterBody2D):
 
 
 func _on_body_entered(body: Node2D) -> void:
-	type.activate()
-	queue_free()
+	if body.is_in_group('player'):
+		type.player = body
+		type.activate()
+		queue_free()

@@ -117,3 +117,5 @@ func drop_item():
 	item_to_drop.player = player 
 	
 	get_tree().current_scene.call_deferred("add_child", item_to_drop)
+func _ready() -> void:
+	add_to_group("enemy")
