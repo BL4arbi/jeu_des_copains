@@ -1,9 +1,25 @@
-[gd_scene load_steps=3 format=3 uid="uid://b6j8w5fsc6um4"]
+[gd_scene load_steps=7 format=3 uid="uid://b6j8w5fsc6um4"]
 
 [ext_resource type="PackedScene" uid="uid://bgmsfdvm3qve6" path="res://scene/spawner.tscn" id="1_b0kse"]
 [ext_resource type="PackedScene" uid="uid://d2uadidm2o654" path="res://scene/player.tscn" id="1_okf0i"]
+[ext_resource type="Script" uid="uid://ckvcxmeg1o45" path="res://scripts/test_scene.gd" id="1_w1wvs"]
+[ext_resource type="Texture2D" uid="uid://cffe7qaxprcoy" path="res://assets/tiles/2D Pixel Dungeon Asset Pack v2.0/2D Pixel Dungeon Asset Pack/character and tileset/Dungeon_Tileset.png" id="4_6bffp"]
 
-[node name="TestScene" type="Node2D"]
+[sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_g7awx"]
+texture = ExtResource("4_6bffp")
+2:0/0 = 0
+2:0/0/physics_layer_0/polygon_0/points = PackedVector2Array(-8, -8, 8, -8, 8, 8, -8, 8)
+7:1/0 = 0
+
+[sub_resource type="TileSet" id="TileSet_urr70"]
+physics_layer_0/collision_layer = 1
+physics_layer_0/collision_mask = 3
+sources/0 = SubResource("TileSetAtlasSource_g7awx")
+
+[node name="TestScene" type="Node2D" node_paths=PackedStringArray("tilemap", "player")]
+script = ExtResource("1_w1wvs")
+tilemap = NodePath("TileMapLayer")
+player = NodePath("Player")
 
 [node name="spawner" parent="." node_paths=PackedStringArray("player") instance=ExtResource("1_b0kse")]
 player = NodePath("../Player")
@@ -11,5 +27,5 @@ player = NodePath("../Player")
 [node name="Player" parent="." instance=ExtResource("1_okf0i")]
 position = Vector2(498, 352)
 
-[node name="Parallax2D" type="Parallax2D" parent="."]
-repeat_size = Vector2(640, 500)
+[node name="TileMapLayer" type="TileMapLayer" parent="."]
+tile_set = SubResource("TileSet_urr70")
