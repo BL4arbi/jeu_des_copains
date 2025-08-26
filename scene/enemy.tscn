@@ -1,6 +1,7 @@
-[gd_scene load_steps=3 format=3 uid="uid://csokuq2r2tckl"]
+[gd_scene load_steps=4 format=3 uid="uid://csokuq2r2tckl"]
 
 [ext_resource type="Script" uid="uid://qivvnonnj3iv" path="res://scripts/enemy/enemy.gd" id="1_f87vc"]
+[ext_resource type="Script" uid="uid://b2hju2gnfmdjl" path="res://scripts/mecanics/effect_receiver.gd" id="2_f87vc"]
 
 [sub_resource type="CapsuleShape2D" id="CapsuleShape2D_b7koy"]
 
@@ -16,3 +17,19 @@ script = ExtResource("1_f87vc")
 shape = SubResource("CapsuleShape2D_b7koy")
 
 [node name="NavigationAgent2D" type="NavigationAgent2D" parent="."]
+
+[node name="EffectReceiver" type="Node2D" parent="."]
+script = ExtResource("2_f87vc")
+metadata/_custom_type_script = "uid://b2hju2gnfmdjl"
+
+[node name="Health" type="ProgressBar" parent="."]
+custom_minimum_size = Vector2(20, 20)
+offset_left = -22.0
+offset_top = -43.0
+offset_right = 23.0
+offset_bottom = -16.0
+value = 100.0
+
+[connection signal="damaged" from="EffectReceiver" to="." method="_on_effect_receiver_damaged"]
+[connection signal="died" from="EffectReceiver" to="." method="_on_effect_receiver_died"]
+[connection signal="health_changed" from="EffectReceiver" to="." method="_on_effect_receiver_health_changed"]

@@ -1,5 +1,6 @@
 #enemy
 extends CharacterBody2D
+@onready var effect_receiver = $EffectReceiver
 @export var player : CharacterBody2D
 @onready var agent = $NavigationAgent2D  # ✅ CORRECTION: NavigationAgent2D pas NavigationLink2D
 var damage_popup_node = preload("res://scene/Damage.tscn")
@@ -117,5 +118,31 @@ func drop_item():
 	item_to_drop.player = player 
 	
 	get_tree().current_scene.call_deferred("add_child", item_to_drop)
+	
+func _damage_amount(amount : float):
+	print(amount)
+
+func _on_died():
+	queue_free()
+
 func _ready() -> void:
-	add_to_group("enemy")
+	add_to_group("enemy") 
+	
+	
+
+func receive_hit(effects: Array[Effect], source : Node):
+	for effect in effects:
+		effect_receiver.apply_effect(effect,source)
+
+func _on_effect_receiver_damaged(amount: float) -> void:
+	pass # Replace with function body.
+
+
+func _on_effect_receiver_died() -> void:
+	pass # Replace with function body.
+
+
+func _on_effect_receiver_health_changed(current_hp: int, max_hp: int) -> void:
+	$Health.value = current_hp
+	$Health.max_value = max_hp
+	

@@ -1,9 +1,12 @@
-[gd_scene load_steps=32 format=3 uid="uid://d2uadidm2o654"]
+[gd_scene load_steps=37 format=3 uid="uid://d2uadidm2o654"]
 
 [ext_resource type="Script" uid="uid://cpr6lwg8a6t5t" path="res://scripts/player/player.gd" id="1_xo3ru"]
 [ext_resource type="Texture2D" uid="uid://crsw3l3mc646u" path="res://assets/SPRITES/character/Char 1/Character 1.png" id="2_hjaqi"]
 [ext_resource type="PackedScene" uid="uid://df5wls65pt5ba" path="res://scene/slot.tscn" id="3_ct4mp"]
+[ext_resource type="Script" uid="uid://lcnttqcc4dvd" path="res://scripts/player/selfdamage.gd" id="3_u7b46"]
+[ext_resource type="Script" uid="uid://bfilb2b7wvypl" path="res://ressource/Effect.gd" id="4_j4wxg"]
 [ext_resource type="Resource" uid="uid://bgfkshp2w4wjo" path="res://ressource/proj/fleche_basique.tres" id="4_s4jxa"]
+[ext_resource type="Script" uid="uid://cqcncmbgdvkhf" path="res://ressource/DamageData.gd" id="5_bup7g"]
 [ext_resource type="PackedScene" uid="uid://ddelxf4g5gqiw" path="res://scene/passive_slot.tscn" id="5_oh5ij"]
 [ext_resource type="Script" uid="uid://cadai7weieaeh" path="res://scripts/ui/options.gd" id="5_s4jxa"]
 [ext_resource type="Resource" uid="uid://ddbuvaxi2j1ko" path="res://ressource/passive/Magnet.tres" id="6_oh5ij"]
@@ -15,6 +18,26 @@
 [sub_resource type="CapsuleShape2D" id="CapsuleShape2D_fvtld"]
 radius = 15.0
 height = 40.0
+
+[sub_resource type="Resource" id="Resource_4ja17"]
+script = ExtResource("5_bup7g")
+amout = 2.0
+damage_category = 2
+physical_type = 0
+elemental_type = 1
+magical_type = 0
+metadata/_custom_type_script = "uid://cqcncmbgdvkhf"
+
+[sub_resource type="Resource" id="Resource_v4iqv"]
+script = ExtResource("4_j4wxg")
+name = "Burn"
+effect_type = 9
+behavior = 2
+damage = SubResource("Resource_4ja17")
+duration = 4.0
+tick_interval = 1.0
+knockback_strength = 0.0
+metadata/_custom_type_script = "uid://bfilb2b7wvypl"
 
 [sub_resource type="CapsuleShape2D" id="CapsuleShape2D_hjaqi"]
 radius = 14.0
@@ -151,6 +174,8 @@ shape = SubResource("CapsuleShape2D_fvtld")
 [node name="Selfdamage" type="Area2D" parent="."]
 collision_layer = 0
 collision_mask = 2
+script = ExtResource("3_u7b46")
+effects = Array[ExtResource("4_j4wxg")]([SubResource("Resource_v4iqv")])
 
 [node name="Collision" type="CollisionShape2D" parent="Selfdamage"]
 unique_name_in_owner = true
@@ -409,6 +434,7 @@ unique_name_in_owner = true
 shape = SubResource("CircleShape2D_ct4mp")
 
 [connection signal="body_entered" from="Selfdamage" to="." method="_on_selfdamage_body_entered"]
+[connection signal="body_entered" from="Selfdamage" to="Selfdamage" method="_on_body_entered"]
 [connection signal="timeout" from="Timer" to="." method="_on_timer_timeout"]
 [connection signal="pressed" from="UI/Chest/Open" to="UI/Chest" method="_on_open_pressed"]
 [connection signal="pressed" from="UI/Chest/Close" to="UI/Chest" method="_on_close_pressed"]

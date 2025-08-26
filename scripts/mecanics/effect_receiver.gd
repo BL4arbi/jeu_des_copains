@@ -22,7 +22,13 @@ var defense_multiplier := 1.0
  
 var active_states: Dictionary = {}     # { EffectType: true }
 var state_timers: Dictionary = {}      # { EffectType: float }
- 
+
+func _physics_process(delta: float) -> void:
+	_process_dots(delta)
+	_process_stat_modifiers(delta)
+	_process_state_timers(delta)
+	_process_knockback(delta)
+
 func _process(delta: float) -> void:
 	_process_dots(delta)
 	_process_stat_modifiers(delta)

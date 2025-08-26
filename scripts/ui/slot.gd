@@ -23,7 +23,7 @@ func get_nearest_enemy():
 	
 	var nearest = null
 	var shortest_distance = INF 
-	var max_range = 80
+	var max_range = 0
 	
 	for enemy in enemies:
 		var distance = owner.global_position.distance_to(enemy.global_position)
